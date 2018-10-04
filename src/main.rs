@@ -104,6 +104,19 @@ fn main() {
         &[],
     );
 
+    let uniform_desc = device.create_descriptor_set_layout(
+        &[
+            pso::DescriptorSetLayoutBinding {
+                binding: 0,
+                ty: pso::DescriptorType::UniformBuffer,
+                count: 1,
+                stage_flags: ShaderStageFlags::FRAGMENT,
+                immutable_samplers: false
+            }
+        ],
+        &[]
+    );
+
     // Descriptors
     let mut desc_pool = device.create_descriptor_pool(
         1, // sets
@@ -119,6 +132,15 @@ fn main() {
         ],
     );
     let desc_set = desc_pool.allocate_set(&set_layout).unwrap();
+
+    let mut uniform_desc_pool = device.create_descriptor_pool(
+        1, // # of sets
+        &[pso::DescriptorRangeDesc {
+            ty: pso::DescriptorType::UniformBuffer,
+            count: 1
+        }],
+    );
+    let uniform_desc = uniform_desc_pool.allocate_set(&uniform_desc).unwrap();
 
     // Buffer allocations
     println!("Memory types: {:?}", memory_types);
@@ -621,7 +643,7 @@ fn main() {
                     &framebuffers[frame as usize],
                     viewport.rect,
                     &[command::ClearValue::Color(command::ClearColor::Float([
-                        0.8, 0.8, 0.8, 1.0,
+                        0.2, 0.2, 0.2, 1.0,
                     ]))],
                 );
                 encoder.draw(0..6, 0..1);
