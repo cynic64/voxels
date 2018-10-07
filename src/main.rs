@@ -38,11 +38,18 @@ use gfx_hal::{
     Primitive, Surface, SwapImageIndex, Swapchain, SwapchainConfig
 };
 
+use gfx_hal::Backend;
+
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
 struct Vertex {
     position: [f32; 3],
     color: [f32; 4],
+}
+
+#[derive(Debug, Clone, Copy)]
+struct UniformBlock {
+    projection: [[f32; 4]; 4]
 }
 
 const MESH: &[Vertex] = &[
@@ -173,20 +180,32 @@ fn main() {
         device.create_render_pass(&[color_attachment], &[subpass], &[dependency])
     };
 
+    // TODO: what is a descriptor set, what is the layout?
+    let set_layout = device.create_descriptor_set_layout(
+        &[DescriptorSetLayoutBinding {
+            binding: 0,
+            ty: DescriptorType::UniformBuffer,
+            count: 1,
+            stage_flags: ShaderStageFlags::VERTEX,
+            immutable_samplers: false,
+        }],
+        &[],
+    );
+
     // The pipeline layout defines the shape of the data you can send to a shader.
     // This includes the number of uniforms and push constants. We don't need them
     // for now.
-    let pipeline_layout = device.create_pipeline_layout(&[], &[]);
+    let pipeline_layout = device.create_pipeline_layout(vec![&set_layout], &[]);
 
     // Shader modules are needed to create a pipeline definition.
     // The shader is loaded from SPIR-V binary files.
     let vertex_shader_module = {
-        let spirv = include_bytes!("../shaders/quad.vert.spv");
+        let spirv = include_bytes!("../shaders/uniform.vert.spv");
         device.create_shader_module(spirv).unwrap()
     };
 
     let fragment_shader_module = {
-        let spirv = include_bytes!("../shaders/quad.frag.spv");
+        let spirv = include_bytes!("../shaders/uniform.frag.spv");
         device.create_shader_module(spirv).unwrap()
     };
 
@@ -277,6 +296,18 @@ fn main() {
             .unwrap()
     };
 
+    // TODO: explain the pool and parameters
+    let mut desc_pool = device.create_descriptor_pool(
+        1,
+        &[DescriptorRangeDesc {
+            ty: DescriptorType::UniformBuffer,
+            count: 1,
+        }],
+    );
+
+    // TODO: explain
+    let desc_set = desc_pool.allocate_set(&set_layout).unwrap();
+
     // We get a list of the available memory types here so we can choose one later.
     let memory_types = physical_device.memory_properties().memory_types;
 
@@ -345,6 +376,25 @@ fn main() {
 
         (buffer, buffer_memory)
     };
+
+    // TODO: Explain both buffer and default value
+    let (uniform_buffer, mut uniform_memory) = create_buffer::<backend::Backend, UniformBlock>(
+        &device,
+        &memory_types,
+        Properties::CPU_VISIBLE,
+        buffer::Usage::UNIFORM,
+        &[UniformBlock {
+            projection: Default::default(),
+        }],
+    );
+
+    // TODO: What is this even?
+    device.write_descriptor_sets(vec![DescriptorSetWrite {
+        set: &desc_set,
+        binding: 0,
+        array_offset: 0,
+        descriptors: Some(Descriptor::Buffer(&uniform_buffer, None..None)),
+    }]);
 
     // Initialize our swapchain, images, framebuffers, etc.
     // We expect to have to rebuild these when the window is resized -
@@ -454,6 +504,25 @@ fn main() {
         }
 
         // Start rendering
+        let (width, height) = (extent.width, extent.height);
+        let aspect_corrected_x = height as f32 / width as f32;
+        let zoom = 0.5;
+        let x_scale = aspect_corrected_x * zoom;
+        let y_scale = zoom;
+
+        fill_buffer::<backend::Backend, UniformBlock>(
+            &device,
+            &mut uniform_memory,
+            &[UniformBlock {
+                projection: [
+                    [x_scale, 0.0, 0.0, 0.0],
+                    [0.0, y_scale, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ],
+            }],
+        );
+
 
         device.reset_fence(&frame_fence);
         command_pool.reset();
@@ -496,6 +565,9 @@ fn main() {
             // again. Basically, we only have one vertex buffer, and one type of
             // vertex buffer, so you can ignore the numbers completely for now.
             command_buffer.bind_vertex_buffers(0, vec![(&vertex_buffer, 0)]);
+
+            // TODO: Explain
+            command_buffer.bind_graphics_descriptor_sets(&pipeline_layout, 0, vec![&desc_set], &[]);
 
             {
                 // Clear the screen and begin the render pass.
@@ -563,5 +635,158 @@ fn main() {
     device.destroy_command_pool(command_pool.into_raw());
     device.destroy_fence(frame_fence);
     device.destroy_semaphore(frame_semaphore);
+
+    device.destroy_descriptor_pool(desc_pool);
+    device.destroy_descriptor_set_layout(set_layout);
+    device.destroy_buffer(uniform_buffer);
+    device.free_memory(uniform_memory);
 }
 
+
+/// Creates an emtpy buffer of a certain type and size.
+pub fn empty_buffer<B: Backend, Item>(
+    device: &B::Device,
+    memory_types: &[MemoryType],
+    properties: Properties,
+    usage: buffer::Usage,
+    item_count: usize,
+) -> (B::Buffer, B::Memory) {
+    // NOTE: Change Vertex -> Item
+    // NOTE: Weird issue with std -> ::std
+    // NOTE: Use passed in usage/properties
+
+    let item_count = item_count; // NOTE: Change
+    let stride = ::std::mem::size_of::<Item>() as u64;
+    let buffer_len = item_count as u64 * stride;
+    let unbound_buffer = device.create_buffer(buffer_len, usage).unwrap();
+    let req = device.get_buffer_requirements(&unbound_buffer);
+    let upload_type = memory_types
+        .iter()
+        .enumerate()
+        .position(|(id, ty)| req.type_mask & (1 << id) != 0 && ty.properties.contains(properties))
+        .unwrap()
+        .into();
+
+    let buffer_memory = device.allocate_memory(upload_type, req.size).unwrap();
+    let buffer = device
+        .bind_buffer_memory(&buffer_memory, 0, unbound_buffer)
+        .unwrap();
+
+    // NOTE: Move buffer fill to another function
+
+    (buffer, buffer_memory)
+}
+
+/// Pushes data into a buffer.
+pub fn fill_buffer<B: Backend, Item: Copy>(
+    device: &B::Device,
+    buffer_memory: &mut B::Memory,
+    items: &[Item],
+) {
+    // NOTE: MESH -> items
+    // NOTE: Recalc buffer_len
+
+    let stride = ::std::mem::size_of::<Item>() as u64;
+    let buffer_len = items.len() as u64 * stride;
+
+    let mut dest = device
+        .acquire_mapping_writer::<Item>(&buffer_memory, 0..buffer_len)
+        .unwrap();
+    dest.copy_from_slice(items);
+    device.release_mapping_writer(dest);
+}
+
+/// Creates a buffer and immediately fills it.
+pub fn create_buffer<B: Backend, Item: Copy>(
+    device: &B::Device,
+    memory_types: &[MemoryType],
+    properties: Properties,
+    usage: buffer::Usage,
+    items: &[Item],
+) -> (B::Buffer, B::Memory) {
+    let (empty_buffer, mut empty_buffer_memory) =
+        empty_buffer::<B, Item>(device, memory_types, properties, usage, items.len());
+
+    fill_buffer::<B, Item>(device, &mut empty_buffer_memory, items);
+
+    (empty_buffer, empty_buffer_memory)
+}
+
+/// Reinterpret an instance of T as a slice of u32s that can be uploaded as push
+/// constants.
+pub fn push_constant_data<T>(data: &T) -> &[u32] {
+    let size = push_constant_size::<T>();
+    let ptr = data as *const T as *const u32;
+
+    unsafe { ::std::slice::from_raw_parts(ptr, size) }
+}
+
+/// Determine the number of push constants required to store T.
+/// Panics if T is not a multiple of 4 bytes - the size of a push constant.
+pub fn push_constant_size<T>() -> usize {
+    const PUSH_CONSTANT_SIZE: usize = ::std::mem::size_of::<u32>();
+    let type_size = ::std::mem::size_of::<T>();
+
+    // We want to ensure that the type we upload as a series of push constants
+    // is actually representable as a series of u32 push constants.
+    assert!(type_size % PUSH_CONSTANT_SIZE == 0);
+
+    type_size / PUSH_CONSTANT_SIZE
+}
+
+/// Create an image, image memory, and image view with the given properties.
+pub fn create_image<B: Backend>(
+    device: &B::Device,
+    memory_types: &[MemoryType],
+    width: u32,
+    height: u32,
+    format: Format,
+    usage: img::Usage,
+    aspects: Aspects,
+) -> (B::Image, B::Memory, B::ImageView) {
+    let kind = img::Kind::D2(width, height, 1, 1);
+
+    let unbound_image = device
+        .create_image(
+            kind,
+            1,
+            format,
+            img::Tiling::Optimal,
+            usage,
+            ViewCapabilities::empty(),
+        ).expect("Failed to create unbound image");
+
+    let image_req = device.get_image_requirements(&unbound_image);
+
+    let device_type = memory_types
+        .iter()
+        .enumerate()
+        .position(|(id, memory_type)| {
+            image_req.type_mask & (1 << id) != 0
+                && memory_type.properties.contains(Properties::DEVICE_LOCAL)
+        }).unwrap()
+        .into();
+
+    let image_memory = device
+        .allocate_memory(device_type, image_req.size)
+        .expect("Failed to allocate image");
+
+    let image = device
+        .bind_image_memory(&image_memory, 0, unbound_image)
+        .expect("Failed to bind image");
+
+    let image_view = device
+        .create_image_view(
+            &image,
+            img::ViewKind::D2,
+            format,
+            Swizzle::NO,
+            img::SubresourceRange {
+                aspects,
+                levels: 0..1,
+                layers: 0..1,
+            },
+        ).expect("Failed to create image view");
+
+    (image, image_memory, image_view)
+}
