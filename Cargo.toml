@@ -10,6 +10,7 @@ log = "0.4"
 winit = "0.17"
 glsl-to-spirv = "0.1.7"
 gfx-hal = { git = "https://github.com/gfx-rs/gfx" }
+nalgebra-glm = "0.1"
 
 [dependencies.gfx-backend-vulkan]
 git = "https://github.com/gfx-rs/gfx"

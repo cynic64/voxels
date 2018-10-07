@@ -7,6 +7,7 @@ extern crate gfx_backend_vulkan as backend;
 
 extern crate gfx_hal;
 extern crate winit;
+extern crate nalgebra_glm as glm;
 
 #[derive(Debug, Clone, Copy)]
 // #[repr(C)]
@@ -17,6 +18,8 @@ struct Vertex {
 
 #[derive(Debug, Clone, Copy)]
 struct UniformBlock {
+    model: [[f32; 4]; 4],
+    view: [[f32; 4]; 4],
     projection: [[f32; 4]; 4]
 }
 
@@ -158,7 +161,7 @@ fn main() {
         &[DescriptorSetLayoutBinding {
             binding: 0,
             ty: DescriptorType::UniformBuffer,
-            count: 1,
+            count: 2,
             stage_flags: ShaderStageFlags::VERTEX,
             immutable_samplers: false,
         }],
@@ -274,7 +277,7 @@ fn main() {
         1,
         &[DescriptorRangeDesc {
             ty: DescriptorType::UniformBuffer,
-            count: 1,
+            count: 2,
         }],
     );
 
@@ -294,15 +297,33 @@ fn main() {
 
     println!("{:?}", vertex_buffer_memory);
 
+    let model = glm::scale(
+        &glm::Mat4::identity(),
+        &glm::vec3(0.5, 0.5, 0.5),
+        ).into();
+    let view = glm::look_at(
+        &glm::vec3(1., 0., 1.),
+        &glm::vec3(0., 0., 0.),
+        &glm::vec3(0., 1., 0.)
+        ).into();
+    let projection = glm::perspective(
+        // fov
+        1.5,
+        // aspect ratio
+        16. / 9.,
+        // near
+        0.0001,
+        // far
+        100000.
+            ).into();
+
     // TODO: Explain both buffer and default value
     let (uniform_buffer, mut uniform_memory) = utils::create_buffer::<backend::Backend, UniformBlock>(
         &device,
         &memory_types,
         Properties::CPU_VISIBLE,
         buffer::Usage::UNIFORM,
-        &[UniformBlock {
-            projection: Default::default(),
-        }],
+        &[ UniformBlock { model, view, projection } ]
     );
 
     // TODO: What is this even?
@@ -395,6 +416,7 @@ fn main() {
     let frame_fence = device.create_fence(false);
 
     let mut quitting = false;
+    let mut count = 0;
     // Mainloop starts here
     while !quitting {
         // If the window is closed, or Escape is pressed, quit
@@ -416,23 +438,23 @@ fn main() {
         });
 
         // Start rendering
-        let (width, height) = (extent.width, extent.height);
-        let aspect_corrected_x = height as f32 / width as f32;
-        let zoom = 0.5;
-        let x_scale = aspect_corrected_x * zoom;
-        let y_scale = zoom;
+        let radius = 2.;
+        let speed = 0.001;
+        let cam_x = ((count as f32) * speed).sin() * radius;
+        let cam_z = ((count as f32) * speed).cos() * radius;
 
         utils::fill_buffer::<backend::Backend, UniformBlock>(
             &device,
             &mut uniform_memory,
             &[UniformBlock {
-                projection: [
-                    [x_scale, 0.0, 0.0, 0.0],
-                    [0.0, y_scale, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-            }],
+                model,
+                view: glm::look_at(
+                    &glm::vec3(cam_x, 0., cam_z),
+                    &glm::vec3(0., 0., 0.),
+                    &glm::vec3(0., 1., 0.)
+                    ).into(),
+                projection,
+            }]
         );
 
         device.reset_fence(&frame_fence);
@@ -524,6 +546,8 @@ fn main() {
         swapchain
             .present(&mut queue_group.queues[0], frame_index, &[])
             .expect("Present failed");
+
+        count += 1;
     }
 
     // Cleanup

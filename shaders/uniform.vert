@@ -7,10 +7,12 @@ layout(location = 1) in vec4 color;
 layout(location = 0) out vec4 varying_color;
 
 layout(binding = 0) uniform UniformBlock {
+    mat4 model;
+    mat4 view;
     mat4 projection;
-} uniform_block;
+} ubo;
 
 void main() {
     varying_color = color;
-    gl_Position = uniform_block.projection * vec4(position, 1.0);
+    gl_Position = ubo.projection * ubo.view * ubo.model  * vec4(position, 1.0);
 }
