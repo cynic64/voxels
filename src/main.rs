@@ -18,14 +18,59 @@ use gfx_hal::{
         SubpassDesc, SubpassRef,
     },
     pool::CommandPoolCreateFlags,
-    pso::{
-        BlendState, ColorBlendDesc, ColorMask, EntryPoint, GraphicsPipelineDesc, GraphicsShaderSet,
-        PipelineStage, Rasterizer, Rect, Viewport,
-    },
     queue::Submission,
-    Backbuffer, Device, FrameSync, Graphics, Instance, Primitive, Surface, SwapImageIndex,
-    Swapchain, SwapchainConfig,
+    adapter::MemoryTypeId,
+    buffer,
+    command::{BufferImageCopy, ClearDepthStencil},
+    image::{
+        self as img, Extent, Filter, Offset, SubresourceLayers,
+        ViewCapabilities, WrapMode,
+    },
+    memory::{Barrier, Dependencies, Properties},
+    pso::{
+        AttributeDesc, BlendState, ColorBlendDesc, ColorMask, Comparison, DepthStencilDesc,
+        DepthTest, Descriptor, DescriptorRangeDesc, DescriptorSetLayoutBinding, DescriptorSetWrite,
+        DescriptorType, Element, EntryPoint, GraphicsPipelineDesc, GraphicsShaderSet,
+        PipelineStage, Rasterizer, Rect, ShaderStageFlags, StencilTest, VertexBufferDesc, Viewport,
+    },
+    window::Extent2D,
+    Backbuffer, DescriptorPool, Device, FrameSync, Graphics, Instance, MemoryType, PhysicalDevice,
+    Primitive, Surface, SwapImageIndex, Swapchain, SwapchainConfig
 };
+
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+struct Vertex {
+    position: [f32; 3],
+    color: [f32; 4],
+}
+
+const MESH: &[Vertex] = &[
+    Vertex {
+        position: [0.0, -1.0, 0.0],
+        color: [1.0, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [-1.0, 0.0, 0.0],
+        color: [0.0, 0.0, 1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 0.0],
+        color: [0.0, 1.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, -1.0, 0.0],
+        color: [1.0, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 0.0],
+        color: [0.0, 1.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, 0.0, 0.0],
+        color: [1.0, 1.0, 0.0, 1.0],
+    },
+];
 
 use winit::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent};
 
@@ -187,9 +232,118 @@ fn main() {
             .targets
             .push(ColorBlendDesc(ColorMask::ALL, BlendState::ALPHA));
 
+        // We need to let our pipeline know about all the different formats of
+        // vertex buffer we're going to use. The `binding` number is an ID for
+        // this entry. The `stride` how the size of one element (vertex) in bytes.
+        // The `rate` is used for instanced rendering, so we'll ignore it for now.
+        pipeline_desc.vertex_buffers.push(VertexBufferDesc {
+            binding: 0,
+            stride: std::mem::size_of::<Vertex>() as u32,
+            rate: 0,
+        });
+
+
+        // We have to declare our two vertex attributes: position and color.
+        // Note that their locations have to match the locations in the shader, and
+        // their format has to be appropriate for the data type in the shader:
+        //
+        // vec3 = Rgb32Float (three 32-bit floats)
+        // vec4 = Rgba32Float (four 32-bit floats)
+        //
+        // Additionally, the second attribute must have an offset of 12 bytes in the
+        // vertex, because this is the size of the first field. The `binding`
+        // parameter refers back to the ID we gave in VertexBufferDesc.
+
+        pipeline_desc.attributes.push(AttributeDesc {
+            location: 0,
+            binding: 0,
+            element: Element {
+                format: Format::Rgb32Float,
+                offset: 0,
+            },
+        });
+
+        pipeline_desc.attributes.push(AttributeDesc {
+            location: 1,
+            binding: 0,
+            element: Element {
+                format: Format::Rgba32Float,
+                offset: 12,
+            },
+        });
+
         device
             .create_graphics_pipeline(&pipeline_desc, None)
             .unwrap()
+    };
+
+    // We get a list of the available memory types here so we can choose one later.
+    let memory_types = physical_device.memory_properties().memory_types;
+
+    // Here's where we create the buffer itself, and the memory to hold it. There's
+    // a lot in here, and in future parts we'll extract it to a utility function.
+    let (vertex_buffer, vertex_buffer_memory) = {
+        // First we create an unbound buffer (e.g, a buffer not currently bound to
+        // any memory). We need to work out the size of it in bytes, and declare
+        // that we want to use it for vertex data.
+        let item_count = MESH.len();
+        let stride = std::mem::size_of::<Vertex>() as u64;
+        let buffer_len = item_count as u64 * stride;
+        let unbound_buffer = device
+            .create_buffer(buffer_len, buffer::Usage::VERTEX)
+            .unwrap();
+
+        // Next, we need the graphics card to tell us what the memory requirements
+        // for this buffer are. This includes the size, alignment, and available
+        // memory types. We know how big our data is, but we have to store it in
+        // a valid way for the device.
+        let req = device.get_buffer_requirements(&unbound_buffer);
+
+        // This complicated looking statement filters through memory types to pick
+        // one that's appropriate. We call enumerate to give us the ID (the index)
+        // of each type, which might look something like this:
+        //
+        // id   ty
+        // ==   ==
+        // 0    DEVICE_LOCAL
+        // 1    COHERENT | CPU_VISIBLE
+        // 2    DEVICE_LOCAL | CPU_VISIBLE
+        // 3    DEVICE_LOCAL | CPU_VISIBLE | CPU_CACHED
+        //
+        // We then want to find the first type that is supported by out memory
+        // requirements (e.g, `id` is in the `type_mask` bitfield), and also has
+        // the CPU_VISIBLE property (so we can copy vertex data directly into it.)
+        let upload_type = memory_types
+            .iter()
+            .enumerate()
+            .find(|(id, ty)| {
+                let type_supported = req.type_mask & (1_u64 << id) != 0;
+                type_supported && ty.properties.contains(Properties::CPU_VISIBLE)
+            }).map(|(id, _ty)| MemoryTypeId(id))
+            .expect("Could not find approprate vertex buffer memory type.");
+
+        // Now that we know the type and size of memory we need, we can allocate it
+        // and bind out buffer to it. The `0` there is an offset, which you could
+        // use to bind multiple buffers to the same block of memory.
+        let buffer_memory = device.allocate_memory(upload_type, req.size).unwrap();
+        let buffer = device
+            .bind_buffer_memory(&buffer_memory, 0, unbound_buffer)
+            .unwrap();
+
+        // Finally, we can copy our vertex data into the buffer. To do this we get
+        // a writer corresponding to the range of memory we want to write to. This
+        // writer essentially memory maps the data and acts as a slice that we can
+        // write into. Once we do that, we unmap the memory, and our buffer should
+        // now be full.
+        {
+            let mut dest = device
+                .acquire_mapping_writer::<Vertex>(&buffer_memory, 0..buffer_len)
+                .unwrap();
+            dest.copy_from_slice(MESH);
+            device.release_mapping_writer(dest);
+        }
+
+        (buffer, buffer_memory)
     };
 
     // Initialize our swapchain, images, framebuffers, etc.
@@ -335,6 +489,14 @@ fn main() {
             // Choose a pipeline to use.
             command_buffer.bind_graphics_pipeline(&pipeline);
 
+            // This is where we tell our pipeline to use a specific vertex buffer.
+            // The first argument again referse to the vertex buffer `binding` as
+            // defined above. Next is a vec of buffers to bind. Each is a pair of
+            // (buffer, offset) where offset is relative to that `binding` number
+            // again. Basically, we only have one vertex buffer, and one type of
+            // vertex buffer, so you can ignore the numbers completely for now.
+            command_buffer.bind_vertex_buffers(0, vec![(&vertex_buffer, 0)]);
+
             {
                 // Clear the screen and begin the render pass.
                 let mut encoder = command_buffer.begin_render_pass_inline(
@@ -352,7 +514,8 @@ fn main() {
                 //
                 // The 0..1 is the range of instances to draw. It's not relevant
                 // unless you're using instanced rendering.
-                encoder.draw(0..3, 0..1);
+                let num_vertices = MESH.len() as u32;
+                encoder.draw(0..num_vertices, 0..1);
             }
 
             // Finish building the command buffer - it's now ready to send to the
