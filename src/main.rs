@@ -60,7 +60,7 @@ fn main() {
 
     let window = WindowBuilder::new()
         .with_title("Part 00: Triangle")
-        .with_dimensions((256, 256).into())
+        .with_fullscreen(Some(events_loop.get_primary_monitor()))
         .build(&events_loop)
         .unwrap();
 
