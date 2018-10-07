@@ -284,14 +284,15 @@ fn main() {
     // We get a list of the available memory types here so we can choose one later.
     let memory_types = physical_device.memory_properties().memory_types;
 
-    // Here's where we create the buffer itself, and the memory to hold it. There's
-    // a lot in here, and in future parts we'll extract it to a utility function.
+    // Here's where we create the buffer itself, and the memory to hold it.
     let (vertex_buffer, vertex_buffer_memory) =
         utils::create_vertex_buffer::<backend::Backend, Vertex>(
             &device,
             &memory_types,
             MESH
         );
+
+    println!("{:?}", vertex_buffer_memory);
 
     // TODO: Explain both buffer and default value
     let (uniform_buffer, mut uniform_memory) = utils::create_buffer::<backend::Backend, UniformBlock>(
@@ -393,10 +394,9 @@ fn main() {
     let frame_semaphore = device.create_semaphore();
     let frame_fence = device.create_fence(false);
 
+    let mut quitting = false;
     // Mainloop starts here
-    loop {
-        let mut quitting = false;
-
+    while !quitting {
         // If the window is closed, or Escape is pressed, quit
         events_loop.poll_events(|event| {
             if let Event::WindowEvent { event, .. } = event {
@@ -414,10 +414,6 @@ fn main() {
                 }
             }
         });
-
-        if quitting {
-            break;
-        }
 
         // Start rendering
         let (width, height) = (extent.width, extent.height);
@@ -438,7 +434,6 @@ fn main() {
                 ],
             }],
         );
-
 
         device.reset_fence(&frame_fence);
         command_pool.reset();

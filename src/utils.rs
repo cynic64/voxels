@@ -1,7 +1,7 @@
 use gfx_hal::Backend;
 use imports::*;
 
-// todo: make sure mesh is vec-like
+// TODO: make sure mesh is vec-like
 pub fn create_vertex_buffer<B: Backend, Vertex: Copy> (
     device: &B::Device,
     memory_types: &[MemoryType],
@@ -11,7 +11,6 @@ pub fn create_vertex_buffer<B: Backend, Vertex: Copy> (
     // any memory). We need to work out the size of it in bytes, and declare
     // that we want to use it for vertex data.
     let item_count = mesh.len();
-    let first_vertex = mesh[0];
     let stride = ::std::mem::size_of::<Vertex>() as u64;
     let buffer_len = item_count as u64 * stride;
     let unbound_buffer = device
@@ -138,83 +137,4 @@ pub fn create_buffer<B: Backend, Item: Copy>(
     fill_buffer::<B, Item>(device, &mut empty_buffer_memory, items);
 
     (empty_buffer, empty_buffer_memory)
-}
-
-/// Reinterpret an instance of T as a slice of u32s that can be uploaded as push
-/// constants.
-pub fn push_constant_data<T>(data: &T) -> &[u32] {
-    let size = push_constant_size::<T>();
-    let ptr = data as *const T as *const u32;
-
-    unsafe { ::std::slice::from_raw_parts(ptr, size) }
-}
-
-/// Determine the number of push constants required to store T.
-/// Panics if T is not a multiple of 4 bytes - the size of a push constant.
-pub fn push_constant_size<T>() -> usize {
-    const PUSH_CONSTANT_SIZE: usize = ::std::mem::size_of::<u32>();
-    let type_size = ::std::mem::size_of::<T>();
-
-    // We want to ensure that the type we upload as a series of push constants
-    // is actually representable as a series of u32 push constants.
-    assert!(type_size % PUSH_CONSTANT_SIZE == 0);
-
-    type_size / PUSH_CONSTANT_SIZE
-}
-
-/// Create an image, image memory, and image view with the given properties.
-pub fn create_image<B: Backend>(
-    device: &B::Device,
-    memory_types: &[MemoryType],
-    width: u32,
-    height: u32,
-    format: Format,
-    usage: img::Usage,
-    aspects: Aspects,
-) -> (B::Image, B::Memory, B::ImageView) {
-    let kind = img::Kind::D2(width, height, 1, 1);
-
-    let unbound_image = device
-        .create_image(
-            kind,
-            1,
-            format,
-            img::Tiling::Optimal,
-            usage,
-            ViewCapabilities::empty(),
-        ).expect("Failed to create unbound image");
-
-    let image_req = device.get_image_requirements(&unbound_image);
-
-    let device_type = memory_types
-        .iter()
-        .enumerate()
-        .position(|(id, memory_type)| {
-            image_req.type_mask & (1 << id) != 0
-                && memory_type.properties.contains(Properties::DEVICE_LOCAL)
-        }).unwrap()
-        .into();
-
-    let image_memory = device
-        .allocate_memory(device_type, image_req.size)
-        .expect("Failed to allocate image");
-
-    let image = device
-        .bind_image_memory(&image_memory, 0, unbound_image)
-        .expect("Failed to bind image");
-
-    let image_view = device
-        .create_image_view(
-            &image,
-            img::ViewKind::D2,
-            format,
-            Swizzle::NO,
-            img::SubresourceRange {
-                aspects,
-                levels: 0..1,
-                layers: 0..1,
-            },
-        ).expect("Failed to create image view");
-
-    (image, image_memory, image_view)
 }
