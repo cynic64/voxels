@@ -8,6 +8,7 @@ extern crate gfx_backend_vulkan as backend;
 extern crate gfx_hal;
 extern crate winit;
 extern crate nalgebra_glm as glm;
+extern crate rand;
 
 #[derive(Debug, Clone, Copy)]
 // #[repr(C)]
@@ -24,30 +25,47 @@ struct UniformBlock {
 }
 
 const MESH: &[Vertex] = &[
-    Vertex {
-        position: [0.0, -1.0, 0.0],
-        color: [1.0, 0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [-1.0, 0.0, 0.0],
-        color: [0.0, 0.0, 1.0, 1.0],
-    },
-    Vertex {
-        position: [0.0, 1.0, 0.0],
-        color: [0.0, 1.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [0.0, -1.0, 0.0],
-        color: [1.0, 0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [0.0, 1.0, 0.0],
-        color: [0.0, 1.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, 0.0, 0.0],
-        color: [1.0, 1.0, 0.0, 1.0],
-    },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1., 0., 0., 1.] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1., 0., 0., 1.] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 0., 0., 1.] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 0., 0., 1.] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1., 0., 0., 1.] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1., 0., 0., 1.] },
+
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 1., 0., 1.] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0., 1., 0., 1.] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0., 1., 0., 1.] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0., 1., 0., 1.] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0., 1., 0., 1.] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 1., 0., 1.] },
+
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0., 0., 1., 1.] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [0., 0., 1., 1.] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 0., 1., 1.] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 0., 1., 1.] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 0., 1., 1.] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0., 0., 1., 1.] },
+
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 1., 0., 1.] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 1., 0., 1.] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1., 1., 0., 1.] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1., 1., 0., 1.] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [1., 1., 0., 1.] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 1., 0., 1.] },
+
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 1., 1., 1.] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [0., 1., 1., 1.] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0., 1., 1., 1.] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0., 1., 1., 1.] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 1., 1., 1.] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 1., 1., 1.] },
+
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1., 0., 1., 1.] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 0., 1., 1.] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 0., 1., 1.] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 0., 1., 1.] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [1., 0., 1., 1.] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1., 0., 1., 1.] }
 ];
 
 use winit::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent};
@@ -58,6 +76,9 @@ mod imports;
 use imports::*;
 
 fn main() {
+    /***************************************************\
+    |                   S E T U P                       |
+    \***************************************************/
     // Create a window with winit.
     let mut events_loop = EventsLoop::new();
 
@@ -122,6 +143,9 @@ fn main() {
         }
     };
 
+    // TODO: How do we choose this correctly?
+    let depth_format = Format::D32FloatS8Uint;
+
     // A render pass defines which attachments (images) are to be used for what
     // purposes. Right now, we only have a color attachment for the final output,
     // but eventually we might have depth/stencil attachments, or even other color
@@ -135,10 +159,19 @@ fn main() {
             layouts: Layout::Undefined..Layout::Present,
         };
 
+        // TODO: Explain
+        let depth_attachment = Attachment {
+            format: Some(depth_format),
+            samples: 1,
+            ops: AttachmentOps::new(AttachmentLoadOp::Clear, AttachmentStoreOp::DontCare),
+            stencil_ops: AttachmentOps::DONT_CARE,
+            layouts: Layout::Undefined..Layout::DepthStencilAttachmentOptimal,
+        };
+
         // A render pass could have multiple subpasses - but we're using one for now.
         let subpass = SubpassDesc {
             colors: &[(0, Layout::ColorAttachmentOptimal)],
-            depth_stencil: None,
+            depth_stencil: Some(&(1, Layout::DepthStencilAttachmentOptimal)),
             inputs: &[],
             resolves: &[],
             preserves: &[],
@@ -153,7 +186,7 @@ fn main() {
                 ..(Access::COLOR_ATTACHMENT_READ | Access::COLOR_ATTACHMENT_WRITE),
         };
 
-        device.create_render_pass(&[color_attachment], &[subpass], &[dependency])
+        device.create_render_pass(&[color_attachment, depth_attachment], &[subpass], &[dependency])
     };
 
     // TODO: what is a descriptor set, what is the layout?
@@ -267,6 +300,16 @@ fn main() {
             },
         });
 
+        // TODO: Explain
+        pipeline_desc.depth_stencil = DepthStencilDesc {
+            depth: DepthTest::On {
+                fun: Comparison::Less,
+                write: true,
+            },
+            depth_bounds: false,
+            stencil: StencilTest::default(),
+        };
+
         device
             .create_graphics_pipeline(&pipeline_desc, None)
             .unwrap()
@@ -354,6 +397,58 @@ fn main() {
 
     let (mut swapchain, backbuffer) = device.create_swapchain(&mut surface, swap_config, None);
 
+    // Here's where we create the new stuff:
+    // TODO: Explain it all
+    let (depth_image, depth_image_memory, depth_image_view) = {
+        let kind =
+            img::Kind::D2(extent.width as img::Size, extent.height as img::Size, 1, 1);
+
+        let unbound_depth_image = device
+            .create_image(
+                kind,
+                1,
+                depth_format,
+                img::Tiling::Optimal,
+                img::Usage::DEPTH_STENCIL_ATTACHMENT,
+                ViewCapabilities::empty(),
+            ).expect("Failed to create unbound depth image");
+
+        let image_req = device.get_image_requirements(&unbound_depth_image);
+
+        let device_type = memory_types
+            .iter()
+            .enumerate()
+            .position(|(id, memory_type)| {
+                image_req.type_mask & (1 << id) != 0
+                    && memory_type.properties.contains(Properties::DEVICE_LOCAL)
+            }).unwrap()
+            .into();
+
+        let depth_image_memory = device
+            .allocate_memory(device_type, image_req.size)
+            .expect("Failed to allocate depth image");
+
+        let depth_image = device
+            .bind_image_memory(&depth_image_memory, 0, unbound_depth_image)
+            .expect("Failed to bind depth image");
+
+        let depth_image_view = device
+            .create_image_view(
+                &depth_image,
+                img::ViewKind::D2,
+                depth_format,
+                Swizzle::NO,
+                img::SubresourceRange {
+                    aspects: Aspects::DEPTH | Aspects::STENCIL,
+                    levels: 0..1,
+                    layers: 0..1,
+                },
+            ).expect("Failed to create image view");
+
+        (depth_image, depth_image_memory, depth_image_view)
+    };
+
+
     // You can think of an image as just the raw binary of the literal image, with
     // additional metadata about the format.
     //
@@ -394,7 +489,7 @@ fn main() {
                 .iter()
                 .map(|image_view| {
                     device
-                        .create_framebuffer(&render_pass, vec![image_view], extent)
+                        .create_framebuffer(&render_pass, vec![image_view, &depth_image_view], extent)
                         .unwrap()
                 }).collect();
 
@@ -407,6 +502,9 @@ fn main() {
         Backbuffer::Framebuffer(fbo) => (vec![], vec![fbo]),
     };
 
+    // model matrices for drawing cubes
+    let cube_matrices = get_cube_matrices();
+
     // The frame semaphore is used to allow us to wait for an image to be ready
     // before attempting to draw on it,
     //
@@ -416,8 +514,12 @@ fn main() {
     let frame_fence = device.create_fence(false);
 
     let mut quitting = false;
-    let mut count = 0;
+    let start = std::time::Instant::now();
+    let mut frame_count = 0;
     // Mainloop starts here
+    /***************************************************\
+    |                M A I N L O O P                    |
+    \***************************************************/
     while !quitting {
         // If the window is closed, or Escape is pressed, quit
         events_loop.poll_events(|event| {
@@ -438,24 +540,17 @@ fn main() {
         });
 
         // Start rendering
+        // update view matrix
         let radius = 2.;
-        let speed = 0.001;
-        let cam_x = ((count as f32) * speed).sin() * radius;
-        let cam_z = ((count as f32) * speed).cos() * radius;
-
-        utils::fill_buffer::<backend::Backend, UniformBlock>(
-            &device,
-            &mut uniform_memory,
-            &[UniformBlock {
-                model,
-                view: glm::look_at(
-                    &glm::vec3(cam_x, 0., cam_z),
-                    &glm::vec3(0., 0., 0.),
-                    &glm::vec3(0., 1., 0.)
-                    ).into(),
-                projection,
-            }]
-        );
+        let speed = 0.5;
+        let elapsed = get_elapsed(start);
+        let cam_x = ((elapsed as f32) * speed).sin() * radius;
+        let cam_z = ((elapsed as f32) * speed).cos() * radius;
+        let view: [[f32; 4]; 4] = glm::look_at(
+                &glm::vec3(cam_x, 0., cam_z),
+                &glm::vec3(0., 0., 0.),
+                &glm::vec3(0., 1., 0.)
+            ).into();
 
         device.reset_fence(&frame_fence);
         command_pool.reset();
@@ -499,16 +594,19 @@ fn main() {
             // vertex buffer, so you can ignore the numbers completely for now.
             command_buffer.bind_vertex_buffers(0, vec![(&vertex_buffer, 0)]);
 
+
             // TODO: Explain
             command_buffer.bind_graphics_descriptor_sets(&pipeline_layout, 0, vec![&desc_set], &[]);
-
             {
                 // Clear the screen and begin the render pass.
                 let mut encoder = command_buffer.begin_render_pass_inline(
                     &render_pass,
                     &framebuffers[frame_index as usize],
                     viewport.rect,
-                    &[ClearValue::Color(ClearColor::Float([0.0, 0.0, 0.0, 1.0]))],
+                    &[
+                        ClearValue::Color(ClearColor::Float([0.0, 0.0, 0.0, 1.0])),
+                        ClearValue::DepthStencil(ClearDepthStencil(1.0, 0))
+                    ]
                 );
 
                 // Draw some geometry! In this case 0..3 means that we're drawing
@@ -520,6 +618,17 @@ fn main() {
                 // The 0..1 is the range of instances to draw. It's not relevant
                 // unless you're using instanced rendering.
                 let num_vertices = MESH.len() as u32;
+
+                utils::fill_buffer::<backend::Backend, UniformBlock>(
+                    &device,
+                    &mut uniform_memory,
+                    &[UniformBlock {
+                        model,
+                        view,
+                        projection,
+                    }]
+                );
+
                 encoder.draw(0..num_vertices, 0..1);
             }
 
@@ -547,7 +656,7 @@ fn main() {
             .present(&mut queue_group.queues[0], frame_index, &[])
             .expect("Present failed");
 
-        count += 1;
+        frame_count += 1;
     }
 
     // Cleanup
@@ -575,4 +684,35 @@ fn main() {
     device.destroy_descriptor_set_layout(set_layout);
     device.destroy_buffer(uniform_buffer);
     device.free_memory(uniform_memory);
+
+    // print avg. fps
+    let fps = (frame_count as f32) / get_elapsed(start);
+    println!("Avg. fps: {}", fps);
+}
+
+fn get_elapsed ( start: std::time::Instant ) -> f32 {
+    start.elapsed().as_secs() as f32 + start.elapsed().subsec_millis() as f32 / 1000.0
+}
+
+fn get_cube_matrices ( ) -> Vec<[[f32; 4]; 4]> {
+    let count = 100;
+    let mut matrices = Vec::new();
+
+    for _ in 0 .. count {
+        let x_raw: f32 = rand::random();
+        let y_raw: f32 = rand::random();
+        let z_raw: f32 = rand::random();
+        let x = 1. / (x_raw - 0.5);
+        let y = 1. / (y_raw - 0.5);
+        let z = 1. / (z_raw - 0.5);
+        let v3 = glm::vec3(x, y, z);
+        let model_array: [[f32; 4]; 4] = glm::translate(
+                &glm::Mat4::identity(),
+                &v3)
+            .into();
+
+        matrices.push(model_array);
+    }
+
+    matrices
 }
