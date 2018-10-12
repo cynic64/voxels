@@ -358,7 +358,7 @@ fn main() {
         0.0001,
         // far
         100000.
-            ).into();
+        ).into();
 
     // TODO: Explain both buffer and default value
     let (uniform_buffer, mut uniform_memory) = utils::create_buffer::<backend::Backend, UniformBlock>(
@@ -565,6 +565,16 @@ fn main() {
         // We have to build a command buffer before we send it off to draw.
         // We don't technically have to do this every frame, but if it needs to
         // change every frame, then we do.
+        utils::fill_buffer::<backend::Backend, UniformBlock>(
+            &device,
+            &mut uniform_memory,
+            &[UniformBlock {
+                model,
+                view,
+                projection,
+            }]
+        );
+
         let finished_command_buffer = {
             let mut command_buffer = command_pool.acquire_command_buffer(false);
 
@@ -594,7 +604,6 @@ fn main() {
             // vertex buffer, so you can ignore the numbers completely for now.
             command_buffer.bind_vertex_buffers(0, vec![(&vertex_buffer, 0)]);
 
-
             // TODO: Explain
             command_buffer.bind_graphics_descriptor_sets(&pipeline_layout, 0, vec![&desc_set], &[]);
             {
@@ -618,16 +627,6 @@ fn main() {
                 // The 0..1 is the range of instances to draw. It's not relevant
                 // unless you're using instanced rendering.
                 let num_vertices = MESH.len() as u32;
-
-                utils::fill_buffer::<backend::Backend, UniformBlock>(
-                    &device,
-                    &mut uniform_memory,
-                    &[UniformBlock {
-                        model,
-                        view,
-                        projection,
-                    }]
-                );
 
                 encoder.draw(0..num_vertices, 0..1);
             }
@@ -695,7 +694,7 @@ fn get_elapsed ( start: std::time::Instant ) -> f32 {
 }
 
 fn get_cube_matrices ( ) -> Vec<[[f32; 4]; 4]> {
-    let count = 100;
+    let count = 2;
     let mut matrices = Vec::new();
 
     for _ in 0 .. count {
