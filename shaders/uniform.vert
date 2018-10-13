@@ -12,7 +12,12 @@ layout(binding = 0) uniform UniformBlock {
     mat4 projection;
 } ubo;
 
+layout(push_constant) uniform PushConstants {
+    vec3 position;
+} push_constants;
+
+
 void main() {
     varying_color = color;
-    gl_Position = ubo.projection * ubo.view * ubo.model  * vec4(position, 1.0);
+    gl_Position = ubo.projection * ubo.view * ubo.model  * vec4(position + push_constants.position, 1.0);
 }

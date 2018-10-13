@@ -68,6 +68,14 @@ const MESH: &[Vertex] = &[
     Vertex { position: [-0.5,  0.5, -0.5], color: [1., 0., 1., 1.] }
 ];
 
+// We need to add another struct now for our push constants. We will have one of
+// these per draw-call, instead of per render-pass.
+// TODO: Reiterate again big warning about layout
+#[derive(Debug, Clone, Copy)]
+struct PushConstants {
+    position: [f32; 3],
+}
+
 use winit::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent};
 
 mod utils;
@@ -88,18 +96,13 @@ fn main() {
         .build(&events_loop)
         .unwrap();
 
-    // Initialize our long-lived graphics state.
-    // We expect these to live for the whole duration of our program.
-
-    // The Instance serves as an entry point to the graphics API. The create method
-    // takes an application name and version - but these aren't important.
+    // The Instance serves as an entry point to the graphics API
     let instance = backend::Instance::create("Part 00: Triangle", 1);
 
     // The surface is an abstraction for the OS's native window.
     let mut surface = instance.create_surface(&window);
 
     // An adapter represents a physical device - such as a graphics card.
-    // We're just taking the first one available, but you could choose one here.
     let mut adapter = instance.enumerate_adapters().remove(0);
 
     // The device is a logical device allowing you to perform GPU operations.
@@ -201,10 +204,19 @@ fn main() {
         &[],
     );
 
+    // TODO: Explain size
+    let num_push_constants = {
+        let size_in_bytes = std::mem::size_of::<PushConstants>();
+        let size_of_push_constant = std::mem::size_of::<u32>();
+        size_in_bytes / size_of_push_constant
+    };
+
     // The pipeline layout defines the shape of the data you can send to a shader.
-    // This includes the number of uniforms and push constants. We don't need them
-    // for now.
-    let pipeline_layout = device.create_pipeline_layout(vec![&set_layout], &[]);
+    // This includes the number of uniforms and push constants.
+    let pipeline_layout = device.create_pipeline_layout(
+        vec![&set_layout],
+        &[(ShaderStageFlags::VERTEX, 0..(num_push_constants as u32))],
+    );
 
     // Shader modules are needed to create a pipeline definition.
     // The shader is loaded from SPIR-V binary files.
@@ -342,7 +354,7 @@ fn main() {
 
     let model = glm::scale(
         &glm::Mat4::identity(),
-        &glm::vec3(0.5, 0.5, 0.5),
+        &glm::vec3(0.01, 0.01, 0.01),
         ).into();
     let view = glm::look_at(
         &glm::vec3(1., 0., 1.),
@@ -376,6 +388,9 @@ fn main() {
         array_offset: 0,
         descriptors: Some(Descriptor::Buffer(&uniform_buffer, None..None)),
     }]);
+
+    // push-constants
+    let offsets = get_cube_offsets();
 
     // Initialize our swapchain, images, framebuffers, etc.
     // We expect to have to rebuild these when the window is resized -
@@ -502,8 +517,6 @@ fn main() {
         Backbuffer::Framebuffer(fbo) => (vec![], vec![fbo]),
     };
 
-    // model matrices for drawing cubes
-    let cube_matrices = get_cube_matrices();
 
     // The frame semaphore is used to allow us to wait for an image to be ready
     // before attempting to draw on it,
@@ -628,7 +641,21 @@ fn main() {
                 // unless you're using instanced rendering.
                 let num_vertices = MESH.len() as u32;
 
-                encoder.draw(0..num_vertices, 0..1);
+                for diamond in &offsets {
+                    let push_constants = {
+                        let start_ptr = diamond as *const PushConstants as *const u32;
+                        unsafe { std::slice::from_raw_parts(start_ptr, num_push_constants) }
+                    };
+
+                    encoder.push_graphics_constants(
+                        &pipeline_layout,
+                        ShaderStageFlags::VERTEX,
+                        0,
+                        push_constants,
+                    );
+
+                    encoder.draw(0..num_vertices, 0..1);
+                }
             }
 
             // Finish building the command buffer - it's now ready to send to the
@@ -693,9 +720,9 @@ fn get_elapsed ( start: std::time::Instant ) -> f32 {
     start.elapsed().as_secs() as f32 + start.elapsed().subsec_millis() as f32 / 1000.0
 }
 
-fn get_cube_matrices ( ) -> Vec<[[f32; 4]; 4]> {
-    let count = 2;
-    let mut matrices = Vec::new();
+fn get_cube_offsets ( ) -> Vec<PushConstants> {
+    let count = 200_000;
+    let mut offsets = Vec::new();
 
     for _ in 0 .. count {
         let x_raw: f32 = rand::random();
@@ -704,14 +731,10 @@ fn get_cube_matrices ( ) -> Vec<[[f32; 4]; 4]> {
         let x = 1. / (x_raw - 0.5);
         let y = 1. / (y_raw - 0.5);
         let z = 1. / (z_raw - 0.5);
-        let v3 = glm::vec3(x, y, z);
-        let model_array: [[f32; 4]; 4] = glm::translate(
-                &glm::Mat4::identity(),
-                &v3)
-            .into();
+        let push_c = PushConstants { position: [x, y, z] };
 
-        matrices.push(model_array);
+        offsets.push(push_c);
     }
 
-    matrices
+    offsets
 }
