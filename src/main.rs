@@ -25,47 +25,47 @@ struct UniformBlock {
 }
 
 const MESH: &[Vertex] = &[
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1., 0., 0., 1.] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1., 0., 0., 1.] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 0., 0., 1.] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 0., 0., 1.] },
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1., 0., 0., 1.] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1., 0., 0., 1.] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
 
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 1., 0., 1.] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0., 1., 0., 1.] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0., 1., 0., 1.] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0., 1., 0., 1.] },
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0., 1., 0., 1.] },
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 1., 0., 1.] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
 
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0., 0., 1., 1.] },
-    Vertex { position: [-0.5,  0.5, -0.5], color: [0., 0., 1., 1.] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 0., 1., 1.] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 0., 1., 1.] },
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 0., 1., 1.] },
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0., 0., 1., 1.] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
 
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 1., 0., 1.] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 1., 0., 1.] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1., 1., 0., 1.] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1., 1., 0., 1.] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [1., 1., 0., 1.] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 1., 0., 1.] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
 
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 1., 1., 1.] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [0., 1., 1., 1.] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0., 1., 1., 1.] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0., 1., 1., 1.] },
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0., 1., 1., 1.] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0., 1., 1., 1.] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
 
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1., 0., 1., 1.] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1., 0., 1., 1.] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 0., 1., 1.] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1., 0., 1., 1.] },
-    Vertex { position: [-0.5,  0.5,  0.5], color: [1., 0., 1., 1.] },
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1., 0., 1., 1.] }
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
 ];
 
 // We need to add another struct now for our push constants. We will have one of
@@ -262,7 +262,14 @@ fn main() {
         let mut pipeline_desc = GraphicsPipelineDesc::new(
             shader_entries,
             Primitive::TriangleList,
-            Rasterizer::FILL,
+            Rasterizer {
+                polygon_mode: PolygonMode::Fill,
+                cull_face: Face::BACK,
+                front_face: FrontFace::CounterClockwise,
+                depth_clamping: false,
+                depth_bias: None,
+                conservative: true,
+            },
             &pipeline_layout,
             subpass,
         );
@@ -312,7 +319,7 @@ fn main() {
             },
         });
 
-        // TODO: Explain
+        // Depth stencil
         pipeline_desc.depth_stencil = DepthStencilDesc {
             depth: DepthTest::On {
                 fun: Comparison::Less,
@@ -641,9 +648,9 @@ fn main() {
                 // unless you're using instanced rendering.
                 let num_vertices = MESH.len() as u32;
 
-                for diamond in &offsets {
+                for offset in &offsets {
                     let push_constants = {
-                        let start_ptr = diamond as *const PushConstants as *const u32;
+                        let start_ptr = offset as *const PushConstants as *const u32;
                         unsafe { std::slice::from_raw_parts(start_ptr, num_push_constants) }
                     };
 
