@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["Steve Larsen <f3bl@gmx.com>"]
 
 [dependencies]
+glutin = "0.18"
 env_logger = "0.5"
 image = "0.19"
 log = "0.4"
-winit = "0.17"
 glsl-to-spirv = "0.1.7"
 gfx-hal = { git = "https://github.com/gfx-rs/gfx" }
 nalgebra-glm = "0.1"

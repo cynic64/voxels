@@ -6,11 +6,12 @@ extern crate gfx_backend_metal as backend;
 extern crate gfx_backend_vulkan as backend;
 
 extern crate gfx_hal;
-extern crate winit;
+extern crate glutin;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
 const SIZE: usize = 127;
+const DIMS: [f64; 2] = [1920.0, 1080.0];
 
 #[derive(Debug, Clone, Copy)]
 // #[repr(C)]
@@ -79,7 +80,7 @@ struct PushConstants {
     position: [f32; 3],
 }
 
-use winit::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent, ElementState};
+use glutin::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent, ElementState};
 
 mod utils;
 mod imports;
@@ -102,6 +103,8 @@ fn main() {
         .with_fullscreen(Some(events_loop.get_primary_monitor()))
         .build(&events_loop)
         .unwrap();
+
+    window.hide_cursor(true);
 
     // The Instance serves as an entry point to the graphics API
     let instance = backend::Instance::create("Part 00: Triangle", 1);
@@ -544,8 +547,6 @@ fn main() {
     let start = std::time::Instant::now();
     let mut frame_count = 0;
 
-    let mut last_mouse_pos = [1920.0 / 2.0, 1080.0 / 2.0];
-
     struct KeysPressed {
         w: bool, a: bool, s: bool, d: bool
     }
@@ -579,10 +580,10 @@ fn main() {
                     WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::D), state: ElementState::Released,.. }, .. } => { keys_pressed.d =false; },
 
                     WindowEvent::CursorMoved { position: p, .. } => {
-                        let (x_diff, y_diff) = (p.x - last_mouse_pos[0], p.y - last_mouse_pos[1]);
+                        let (x_diff, y_diff) = (p.x - (DIMS[0] / 2.0), (p.y - DIMS[1] / 2.0));
                         cam.mouse_move(x_diff as f32, y_diff as f32);
-                        last_mouse_pos[0] = p.x;
-                        last_mouse_pos[1] = p.y;
+                        window.set_cursor_position(glutin::dpi::LogicalPosition { x: DIMS[0] / 2.0, y: DIMS[1] / 2.0 })
+                            .expect("Couldn't re-set cursor position!");
                     },
                     _ => {}
                 }
@@ -597,11 +598,6 @@ fn main() {
 
         // Start rendering
         // update view matrix
-        let radius = (SIZE as f32) / 100. * 1.2;
-        let speed = 0.1;
-        let elapsed = get_elapsed(start);
-        let cam_x = ((elapsed as f32) * speed).sin() * radius;
-        let cam_z = ((elapsed as f32) * speed).cos() * radius;
         let view: [[f32; 4]; 4] = cam.get_view_matrix().into();
 
         device.reset_fence(&frame_fence);

@@ -13,7 +13,6 @@ pub struct Camera {
     yaw: f32,
     movement_speed: f32,
     mouse_sens: f32,
-    zoom: f32,
 }
 
 impl Camera {
@@ -49,9 +48,10 @@ impl Camera {
     pub fn mouse_move ( &mut self, x: f32, y: f32 ) {
         self.pitch += y * self.mouse_sens;
         self.yaw += x * self.mouse_sens;
+        let halfpi = 3.14 / 2.0;
 
-        if self.pitch > 89.0 { self.pitch = 89.0; }
-        else if self.pitch < -89.0 { self.pitch = -89.0; }
+        if self.pitch > halfpi { self.pitch = halfpi; }
+        else if self.pitch < -halfpi { self.pitch = -halfpi; }
 
         self.update();
     }
