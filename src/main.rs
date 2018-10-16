@@ -10,6 +10,8 @@ extern crate winit;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
+const SIZE: usize = 127;
+
 #[derive(Debug, Clone, Copy)]
 // #[repr(C)]
 struct Vertex {
@@ -25,6 +27,7 @@ struct UniformBlock {
 }
 
 const MESH: &[Vertex] = &[
+    // Vertex { position: [0., 0., 0.], color: [1.0, 1.0, 1.0, 1.0] },
     Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
     Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
     Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
@@ -76,14 +79,18 @@ struct PushConstants {
     position: [f32; 3],
 }
 
-use winit::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent};
+use winit::{Event, EventsLoop, KeyboardInput, VirtualKeyCode, WindowBuilder, WindowEvent, ElementState};
 
 mod utils;
 mod imports;
+mod ca;
+mod camera;
 
 use imports::*;
 
 fn main() {
+    let mut ca = ca::CellA::new(SIZE, SIZE, SIZE);
+    let mut cam = camera::Camera::default();
     /***************************************************\
     |                   S E T U P                       |
     \***************************************************/
@@ -421,7 +428,7 @@ fn main() {
 
     // Here's where we create the new stuff:
     // TODO: Explain it all
-    let (depth_image, depth_image_memory, depth_image_view) = {
+    let (_depth_image, _depth_image_memory, depth_image_view) = {
         let kind =
             img::Kind::D2(extent.width as img::Size, extent.height as img::Size, 1, 1);
 
@@ -536,6 +543,13 @@ fn main() {
     let mut quitting = false;
     let start = std::time::Instant::now();
     let mut frame_count = 0;
+
+    let mut last_mouse_pos = [1920.0 / 2.0, 1080.0 / 2.0];
+
+    struct KeysPressed {
+        w: bool, a: bool, s: bool, d: bool
+    }
+    let mut keys_pressed = KeysPressed { w: false, a: false, s: false, d: false };
     // Mainloop starts here
     /***************************************************\
     |                M A I N L O O P                    |
@@ -554,23 +568,41 @@ fn main() {
                             },
                         ..
                     } => quitting = true,
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::N), state: ElementState::Pressed, .. }, .. } => { ca.next_gen(); },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::W), state: ElementState::Pressed, .. }, .. } => { keys_pressed.w = true; },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::A), state: ElementState::Pressed, .. }, .. } => { keys_pressed.a = true; },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::S), state: ElementState::Pressed, .. }, .. } => { keys_pressed.s = true; },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::D), state: ElementState::Pressed, .. }, .. } => { keys_pressed.d = true; },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::W), state: ElementState::Released,.. }, .. } => { keys_pressed.w =false; },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::A), state: ElementState::Released,.. }, .. } => { keys_pressed.a =false; },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::S), state: ElementState::Released,.. }, .. } => { keys_pressed.s =false; },
+                    WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::D), state: ElementState::Released,.. }, .. } => { keys_pressed.d =false; },
+
+                    WindowEvent::CursorMoved { position: p, .. } => {
+                        let (x_diff, y_diff) = (p.x - last_mouse_pos[0], p.y - last_mouse_pos[1]);
+                        cam.mouse_move(x_diff as f32, y_diff as f32);
+                        last_mouse_pos[0] = p.x;
+                        last_mouse_pos[1] = p.y;
+                    },
                     _ => {}
                 }
             }
         });
 
+        // movement
+        if keys_pressed.w { cam.move_forward(); }
+        if keys_pressed.s { cam.move_backward(); }
+        if keys_pressed.a { cam.move_left(); }
+        if keys_pressed.d { cam.move_right(); }
+
         // Start rendering
         // update view matrix
-        let radius = 2.;
-        let speed = 0.5;
+        let radius = (SIZE as f32) / 100. * 1.2;
+        let speed = 0.1;
         let elapsed = get_elapsed(start);
         let cam_x = ((elapsed as f32) * speed).sin() * radius;
         let cam_z = ((elapsed as f32) * speed).cos() * radius;
-        let view: [[f32; 4]; 4] = glm::look_at(
-                &glm::vec3(cam_x, 0., cam_z),
-                &glm::vec3(0., 0., 0.),
-                &glm::vec3(0., 1., 0.)
-            ).into();
+        let view: [[f32; 4]; 4] = cam.get_view_matrix().into();
 
         device.reset_fence(&frame_fence);
         command_pool.reset();
@@ -648,20 +680,22 @@ fn main() {
                 // unless you're using instanced rendering.
                 let num_vertices = MESH.len() as u32;
 
-                for offset in &offsets {
-                    let push_constants = {
-                        let start_ptr = offset as *const PushConstants as *const u32;
-                        unsafe { std::slice::from_raw_parts(start_ptr, num_push_constants) }
-                    };
+                for (i, offset) in offsets.iter().enumerate() {
+                    if ca.cells[i] {
+                        let push_constants = {
+                            let start_ptr = offset as *const PushConstants as *const u32;
+                            unsafe { std::slice::from_raw_parts(start_ptr, num_push_constants) }
+                        };
 
-                    encoder.push_graphics_constants(
-                        &pipeline_layout,
-                        ShaderStageFlags::VERTEX,
-                        0,
-                        push_constants,
-                    );
+                        encoder.push_graphics_constants(
+                            &pipeline_layout,
+                            ShaderStageFlags::VERTEX,
+                            0,
+                            push_constants,
+                        );
 
-                    encoder.draw(0..num_vertices, 0..1);
+                        encoder.draw(0..num_vertices, 0..1);
+                    }
                 }
             }
 
@@ -728,19 +762,16 @@ fn get_elapsed ( start: std::time::Instant ) -> f32 {
 }
 
 fn get_cube_offsets ( ) -> Vec<PushConstants> {
-    let count = 200_000;
     let mut offsets = Vec::new();
-
-    for _ in 0 .. count {
-        let x_raw: f32 = rand::random();
-        let y_raw: f32 = rand::random();
-        let z_raw: f32 = rand::random();
-        let x = 1. / (x_raw - 0.5);
-        let y = 1. / (y_raw - 0.5);
-        let z = 1. / (z_raw - 0.5);
-        let push_c = PushConstants { position: [x, y, z] };
-
-        offsets.push(push_c);
+    let half = (SIZE as f32) / 2.;
+    for y in 0 .. SIZE {
+        for x in 0 .. SIZE {
+            for z in 0 .. SIZE {
+                let (x, y, z) = (x as f32, y as f32, z as f32);
+                let push_c = PushConstants { position: [x - half, y - half, z - half] };
+                offsets.push(push_c);
+            }
+        }
     }
 
     offsets

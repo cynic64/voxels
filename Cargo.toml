@@ -12,6 +12,7 @@ glsl-to-spirv = "0.1.7"
 gfx-hal = { git = "https://github.com/gfx-rs/gfx" }
 nalgebra-glm = "0.1"
 rand = "0.5"
+rayon = "1.0"
 
 [dependencies.gfx-backend-vulkan]
 git = "https://github.com/gfx-rs/gfx"

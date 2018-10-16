@@ -19,5 +19,5 @@ layout(push_constant) uniform PushConstants {
 
 void main() {
     varying_color = color;
-    gl_Position = ubo.projection * ubo.view * ubo.model  * vec4(position + push_constants.position, 1.0);
+    gl_Position = ubo.projection * ubo.view * ubo.model * vec4(position + push_constants.position, 1.0);
 }
