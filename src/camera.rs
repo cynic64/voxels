@@ -4,7 +4,7 @@ use glm::*;
 
 pub struct Camera {
     position: Vec3,
-    pub front: Vec3,
+    front: Vec3,
     up: Vec3,
     right: Vec3,
     world_up: Vec3,
@@ -32,9 +32,8 @@ impl Camera {
         let world_up = vec3(0.0, 1.0, 0.0);
         let movement_speed = 0.001;
         let mouse_sens = 0.003;
-        let zoom = 0.0;
 
-        Camera { position, front, up, right, world_up, pitch, yaw, movement_speed, mouse_sens, zoom }
+        Camera { position, front, up, right, world_up, pitch, yaw, movement_speed, mouse_sens }
     }
 
     pub fn get_view_matrix ( &self ) ->  Mat4 {
@@ -48,7 +47,7 @@ impl Camera {
     pub fn mouse_move ( &mut self, x: f32, y: f32 ) {
         self.pitch += y * self.mouse_sens;
         self.yaw += x * self.mouse_sens;
-        let halfpi = 3.14 / 2.0;
+        let halfpi = std::f32::consts::PI / 2.0;
 
         if self.pitch > halfpi { self.pitch = halfpi; }
         else if self.pitch < -halfpi { self.pitch = -halfpi; }

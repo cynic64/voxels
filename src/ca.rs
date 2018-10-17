@@ -42,52 +42,41 @@ impl CellA {
         let new_cells = (0 .. self.width * self.height * self.length)
             .into_par_iter()
             .map(|idx| {
-                if (idx >= self.width * self.height + self.width + 1) && (idx < (self.width * self.height * self.length) - (self.width * self.height) - self.width - 1) {
+                if (idx > self.width * self.height + self.width) && (idx < (self.width * self.height * self.length) - (self.width * self.height) - self.width - 1) {
                     let alive = self.cells[idx];
-                    let mut neighbors = 0;
+                    let neighbors = [
+                        self.cells[idx + (self.width * self.height) + self.width + 1],
+                        self.cells[idx + (self.width * self.height) + self.width    ],
+                        self.cells[idx + (self.width * self.height) + self.width - 1],
+                        self.cells[idx + (self.width * self.height)              + 1],
+                        self.cells[idx + (self.width * self.height)                 ],
+                        self.cells[idx + (self.width * self.height)              - 1],
+                        self.cells[idx + (self.width * self.height) - self.width + 1],
+                        self.cells[idx + (self.width * self.height) - self.width    ],
+                        self.cells[idx + (self.width * self.height) - self.width - 1],
+                        self.cells[idx                              + self.width + 1],
+                        self.cells[idx                              + self.width    ],
+                        self.cells[idx                              + self.width - 1],
+                        self.cells[idx                                           + 1],
+                        self.cells[idx                                           - 1],
+                        self.cells[idx                              - self.width + 1],
+                        self.cells[idx                              - self.width    ],
+                        self.cells[idx                              - self.width - 1],
+                        self.cells[idx - (self.width * self.height) + self.width + 1],
+                        self.cells[idx - (self.width * self.height) + self.width    ],
+                        self.cells[idx - (self.width * self.height) + self.width - 1],
+                        self.cells[idx - (self.width * self.height)              + 1],
+                        self.cells[idx - (self.width * self.height)                 ],
+                        self.cells[idx - (self.width * self.height)              - 1],
+                        self.cells[idx - (self.width * self.height) - self.width + 1],
+                        self.cells[idx - (self.width * self.height) - self.width    ],
+                        self.cells[idx - (self.width * self.height) - self.width - 1]
+                    ].iter().filter(|x| **x).count();
 
-                    if self.cells[idx + (self.width * self.height) + self.width + 1] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height) + self.width    ] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height) + self.width - 1] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height)              + 1] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height)                 ] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height)              - 1] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height) - self.width + 1] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height) - self.width    ] { neighbors += 1; }
-                    if self.cells[idx + (self.width * self.height) - self.width - 1] { neighbors += 1; }
-                    if self.cells[idx                              + self.width + 1] { neighbors += 1; }
-                    if self.cells[idx                              + self.width    ] { neighbors += 1; }
-                    if self.cells[idx                              + self.width - 1] { neighbors += 1; }
-                    if self.cells[idx                                           + 1] { neighbors += 1; }
-                    if self.cells[idx                                           - 1] { neighbors += 1; }
-                    if self.cells[idx                              - self.width + 1] { neighbors += 1; }
-                    if self.cells[idx                              - self.width    ] { neighbors += 1; }
-                    if self.cells[idx                              - self.width - 1] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height) + self.width + 1] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height) + self.width    ] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height) + self.width - 1] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height)              + 1] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height)                 ] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height)              - 1] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height) - self.width + 1] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height) - self.width    ] { neighbors += 1; }
-                    if self.cells[idx - (self.width * self.height) - self.width - 1] { neighbors += 1; }
-
-                    if alive {
-                        if neighbors >= 12 && neighbors <= 26 {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    } else {
-                        if neighbors >= 16 && neighbors <= 26 {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
+                    if alive { neighbors >= 12 && neighbors <= 26 }
+                    else { neighbors >= 16 && neighbors <= 26 }
                 } else {
-                    return false
+                    false
                 }
             })
             .collect();

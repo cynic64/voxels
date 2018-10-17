@@ -386,7 +386,7 @@ fn main() {
         // near
         0.0001,
         // far
-        100000.
+        100_000.
         ).into();
 
     // TODO: Explain both buffer and default value
