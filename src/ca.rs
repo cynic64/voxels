@@ -10,16 +10,16 @@ pub struct CellA {
 }
 
 impl CellA {
-    pub fn new ( width: usize, height: usize, length: usize ) -> CellA {
+    pub fn new ( width: usize, height: usize, length: usize ) -> Self {
         let cells = (0 .. width * height * length)
             .into_par_iter()
-            .map(|_| {
+            .map(|x| {
                 // to randomize
-                // if x < width * height {
+                if x < width * height {
                     rand::random()
-                // } else {
-                //     false
-                // }
+                } else {
+                    false
+                }
 
                 // to fill center
                 // if x == (width * height * length / 2) {
@@ -30,7 +30,7 @@ impl CellA {
             })
             .collect();
 
-        CellA {
+        Self {
             cells,
             width,
             height,
@@ -73,8 +73,8 @@ impl CellA {
                         self.cells[idx - (self.width * self.height) - self.width - 1]
                     ].iter().filter(|x| **x).count();
 
-                    if alive { neighbors >= 12 && neighbors <= 26 }
-                    else { neighbors >= 16 && neighbors <= 26 }
+                    if alive { neighbors >= 4 && neighbors <= 5 }
+                    else { neighbors >= 5 && neighbors <= 6 }
                 } else {
                     false
                 }
