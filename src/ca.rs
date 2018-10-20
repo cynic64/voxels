@@ -73,8 +73,8 @@ impl CellA {
                         self.cells[idx - (self.width * self.height) - self.width - 1]
                     ].iter().filter(|x| **x).count();
 
-                    if alive { neighbors >= 4 && neighbors <= 5 }
-                    else { neighbors >= 5 && neighbors <= 6 }
+                    if alive { neighbors >= 5 && neighbors <= 7 }
+                    else { neighbors >= 6 && neighbors <= 6 }
                 } else {
                     false
                 }
