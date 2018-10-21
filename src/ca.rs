@@ -18,7 +18,7 @@ pub struct CellA {
 impl CellA {
     pub fn new ( width: usize, height: usize, length: usize, min_surv: u8, max_surv: u8, min_birth: u8, max_birth: u8 ) -> Self {
         let cells = vec![0; width * height * length];
-        let max_age = 5;
+        let max_age = 1;
 
         Self {
             cells,
@@ -44,10 +44,6 @@ impl CellA {
             .map(|idx| {
                 if (idx > self.width * self.height + self.width) && (idx < (self.width * self.height * self.length) - (self.width * self.height) - self.width - 1) {
                     let cur_state = self.cells[idx];
-                    if cur_state >= self.max_age {
-                        return 0
-                    }
-
                     let neighbors = [
                         self.cells[idx + (self.width * self.height) + self.width + 1],
                         self.cells[idx + (self.width * self.height) + self.width    ],
@@ -77,12 +73,16 @@ impl CellA {
                         self.cells[idx - (self.width * self.height) - self.width - 1]
                     ];
 
-                    // let count = bytecount::count(&neighbors, 1) as u8;
                     let count: u8 = neighbors.iter().sum();
 
                     if cur_state > 0 {
                         if count >= self.min_surv && count <= self.max_surv {
-                            cur_state + 1
+                            let new_state = cur_state + 1;
+                            if new_state > self.max_age {
+                                self.max_age
+                            } else {
+                                new_state
+                            }
                         } else {
                             0
                         }
