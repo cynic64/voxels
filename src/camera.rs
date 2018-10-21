@@ -30,7 +30,7 @@ impl Camera {
         let right = vec3(0.0, 0.0, 0.0);
         let up = vec3(0.0, 1.0, 0.0);
         let world_up = vec3(0.0, 1.0, 0.0);
-        let movement_speed = 0.001;
+        let movement_speed = 0.3;
         let mouse_sens = 0.001;
 
         Camera { position, front, up, right, world_up, pitch, yaw, movement_speed, mouse_sens }
@@ -55,20 +55,20 @@ impl Camera {
         self.update();
     }
 
-    pub fn move_forward ( &mut self ) {
-        self.position += self.front * self.movement_speed;
+    pub fn move_forward ( &mut self, delta: f32 ) {
+        self.position += self.front * self.movement_speed * delta;
     }
 
-    pub fn move_backward( &mut self ) {
-        self.position -= self.front * self.movement_speed;
+    pub fn move_backward( &mut self, delta: f32 ) {
+        self.position -= self.front * self.movement_speed * delta;
     }
 
-    pub fn move_left ( &mut self ) {
-        self.position -= self.right * self.movement_speed;
+    pub fn move_left ( &mut self, delta: f32 ) {
+        self.position -= self.right * self.movement_speed * delta;
     }
 
-    pub fn move_right ( &mut self ) {
-        self.position += self.right * self.movement_speed;
+    pub fn move_right ( &mut self, delta: f32 ) {
+        self.position += self.right * self.movement_speed * delta;
     }
 
     fn update ( &mut self ) {

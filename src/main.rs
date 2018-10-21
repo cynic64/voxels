@@ -10,7 +10,7 @@ extern crate glutin;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
-const SIZE: usize = 127;
+const SIZE: usize = 63;
 const DIMS: [f64; 2] = [1920.0, 1080.0];
 
 #[derive(Debug, Clone, Copy)]
@@ -28,7 +28,6 @@ struct UniformBlock {
 }
 
 const MESH: &[Vertex] = &[
-    // Vertex { position: [0., 0., 0.], color: [1.0, 1.0, 1.0, 1.0] },
     Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
     Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
     Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
@@ -50,26 +49,26 @@ const MESH: &[Vertex] = &[
     Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
     Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
 
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
+
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
     Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
     Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
 
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
-
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [-0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
 ];
 
 // We need to add another struct now for our push constants. We will have one of
@@ -90,8 +89,28 @@ mod camera;
 use imports::*;
 
 fn main() {
-    let mut ca = ca::CellA::new(SIZE, SIZE, SIZE);
+    // cmd-line arguments
+    let mut ca = {
+        let mut args: Vec<_> = std::env::args().collect();
+        let (mut min_surv, mut max_surv, mut min_birth, mut max_birth);
+        if args.len() == 5 {
+            println!("Got args!");
+            min_birth = args[1].parse::<u8>().expect("Not an int!!!");
+            max_birth = args[2].parse::<u8>().expect("Not an int!!!");
+            min_surv = args[3].parse::<u8>().expect("Not an int!!!");
+            max_surv = args[4].parse::<u8>().expect("Not an int!!!");
+        } else {
+            println!("Not enough arguments, using defaults.");
+            min_birth = 14;
+            max_birth = 255;
+            min_surv = 12;
+            max_surv = 255;
+        }
+
+        ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
+    };
     let mut cam = camera::Camera::default();
+    // get colors for states
     /***************************************************\
     |                   S E T U P                       |
     \***************************************************/
@@ -555,7 +574,10 @@ fn main() {
     /***************************************************\
     |                M A I N L O O P                    |
     \***************************************************/
+    let mut last_frame = std::time::Instant::now();
     while !quitting {
+        let delta = get_elapsed(last_frame);
+        last_frame = std::time::Instant::now();
         // If the window is closed, or Escape is pressed, quit
         events_loop.poll_events(|event| {
             if let Event::WindowEvent { event, .. } = event {
@@ -591,10 +613,10 @@ fn main() {
         });
 
         // movement
-        if keys_pressed.w { cam.move_forward(); }
-        if keys_pressed.s { cam.move_backward(); }
-        if keys_pressed.a { cam.move_left(); }
-        if keys_pressed.d { cam.move_right(); }
+        if keys_pressed.w { cam.move_forward(delta); }
+        if keys_pressed.s { cam.move_backward(delta); }
+        if keys_pressed.a { cam.move_left(delta); }
+        if keys_pressed.d { cam.move_right(delta); }
 
         // Start rendering
         // update view matrix
@@ -677,7 +699,7 @@ fn main() {
                 let num_vertices = MESH.len() as u32;
 
                 for (i, offset) in offsets.iter().enumerate() {
-                    if ca.cells[i] {
+                    if ca.cells[i] > 0 {
                         let push_constants = {
                             let start_ptr = offset as *const PushConstants as *const u32;
                             unsafe { std::slice::from_raw_parts(start_ptr, num_push_constants) }
@@ -764,7 +786,10 @@ fn get_cube_offsets ( ) -> Vec<PushConstants> {
         for x in 0 .. SIZE {
             for z in 0 .. SIZE {
                 let (x, y, z) = (x as f32, y as f32, z as f32);
-                let push_c = PushConstants { position: [x - half, y - half, z - half] };
+                let position = [x - half, y - half, z - half];
+                let push_c = PushConstants {
+                    position,
+                };
                 offsets.push(push_c);
             }
         }
