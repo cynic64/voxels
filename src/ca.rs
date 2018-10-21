@@ -17,28 +17,7 @@ pub struct CellA {
 
 impl CellA {
     pub fn new ( width: usize, height: usize, length: usize, min_surv: u8, max_surv: u8, min_birth: u8, max_birth: u8 ) -> Self {
-        let cells = (0 .. width * height * length)
-            .into_par_iter()
-            .map(|x| {
-                // to randomize
-                // if x < width * height {
-                    if rand::random() {
-                        1
-                    } else {
-                        0
-                    }
-                // } else {
-                //     0
-                // }
-
-                // to fill center
-                // if x == (width * height * length / 2) {
-                //     true
-                // } else {
-                //     false
-                // }
-            })
-            .collect();
+        let cells = vec![0; width * height * length];
         let max_age = 5;
 
         Self {
@@ -54,16 +33,19 @@ impl CellA {
         }
     }
 
+    pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {
+        let idx = (z * self.width * self.height) + (y * self.width) + x;
+        self.cells[idx] = new_state;
+    }
+
     pub fn next_gen ( &mut self ) {
         let new_cells = (0 .. self.width * self.height * self.length)
             .into_par_iter()
             .map(|idx| {
                 if (idx > self.width * self.height + self.width) && (idx < (self.width * self.height * self.length) - (self.width * self.height) - self.width - 1) {
                     let cur_state = self.cells[idx];
-                    if cur_state > self.max_age {
+                    if cur_state >= self.max_age {
                         return 0
-                    } else if cur_state > 1 {
-                        return cur_state + 1
                     }
 
                     let neighbors = [
@@ -105,7 +87,7 @@ impl CellA {
                             0
                         }
                     } else if count >= self.min_birth && count <= self.max_birth {
-                        cur_state + 1
+                        1
                     } else {
                         0
                     }

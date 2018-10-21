@@ -10,65 +10,63 @@ extern crate glutin;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
-const SIZE: usize = 63;
+const SIZE: usize = 255;
 const DIMS: [f64; 2] = [1920.0, 1080.0];
 
 #[derive(Debug, Clone, Copy)]
-// #[repr(C)]
 struct Vertex {
     position: [f32; 3],
-    color: [f32; 4],
 }
 
 #[derive(Debug, Clone, Copy)]
 struct UniformBlock {
     model: [[f32; 4]; 4],
     view: [[f32; 4]; 4],
-    projection: [[f32; 4]; 4]
+    projection: [[f32; 4]; 4],
 }
 
 const MESH: &[Vertex] = &[
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0, 1.0] },
+    Vertex { position: [-0.5, -0.5, -0.5] },
+    Vertex { position: [ 0.5, -0.5, -0.5] },
+    Vertex { position: [ 0.5,  0.5, -0.5] },
+    Vertex { position: [ 0.5,  0.5, -0.5] },
+    Vertex { position: [-0.5,  0.5, -0.5] },
+    Vertex { position: [-0.5, -0.5, -0.5] },
 
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [-0.5, -0.5,  0.5] },
+    Vertex { position: [ 0.5,  0.5,  0.5] },
+    Vertex { position: [ 0.5, -0.5,  0.5] },
+    Vertex { position: [ 0.5,  0.5,  0.5] },
+    Vertex { position: [-0.5, -0.5,  0.5] },
+    Vertex { position: [-0.5,  0.5,  0.5] },
 
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [-0.5,  0.5,  0.5] },
+    Vertex { position: [-0.5, -0.5, -0.5] },
+    Vertex { position: [-0.5,  0.5, -0.5] },
+    Vertex { position: [-0.5, -0.5, -0.5] },
+    Vertex { position: [-0.5,  0.5,  0.5] },
+    Vertex { position: [-0.5, -0.5,  0.5] },
 
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 1.0, 0.0, 1.0] },
+    Vertex { position: [ 0.5,  0.5,  0.5] },
+    Vertex { position: [ 0.5,  0.5, -0.5] },
+    Vertex { position: [ 0.5, -0.5, -0.5] },
+    Vertex { position: [ 0.5, -0.5, -0.5] },
+    Vertex { position: [ 0.5, -0.5,  0.5] },
+    Vertex { position: [ 0.5,  0.5,  0.5] },
 
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0, 1.0] },
-    Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 1.0, 1.0] },
+    Vertex { position: [-0.5, -0.5, -0.5] },
+    Vertex { position: [ 0.5, -0.5,  0.5] },
+    Vertex { position: [ 0.5, -0.5, -0.5] },
+    Vertex { position: [ 0.5, -0.5,  0.5] },
+    Vertex { position: [-0.5, -0.5, -0.5] },
+    Vertex { position: [-0.5, -0.5,  0.5] },
 
-    Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0, 1.0] },
-    Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 1.0, 1.0] },
+    Vertex { position: [-0.5,  0.5, -0.5] },
+    Vertex { position: [ 0.5,  0.5, -0.5] },
+    Vertex { position: [ 0.5,  0.5,  0.5] },
+    Vertex { position: [ 0.5,  0.5,  0.5] },
+    Vertex { position: [-0.5,  0.5,  0.5] },
+    Vertex { position: [-0.5,  0.5, -0.5] },
 ];
 
 // We need to add another struct now for our push constants. We will have one of
@@ -76,6 +74,7 @@ const MESH: &[Vertex] = &[
 // TODO: Reiterate again big warning about layout
 #[derive(Debug, Clone, Copy)]
 struct PushConstants {
+    tint: [f32; 4],
     position: [f32; 3],
 }
 
@@ -109,6 +108,32 @@ fn main() {
 
         ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
     };
+    ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2, 1);
+    ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2, 1);
+    ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2 + 1, 1);
+    ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2 + 1, 1);
+    ca.set_xyz(SIZE / 2 + 1, SIZE / 2, SIZE / 2, 2);
+    ca.set_xyz(SIZE / 2 + 1, SIZE / 2 + 1, SIZE / 2, 2);
+    ca.set_xyz(SIZE / 2 + 1, SIZE / 2, SIZE / 2 + 1, 2);
+    ca.set_xyz(SIZE / 2 + 1, SIZE / 2 + 1, SIZE / 2 + 1, 2);
+    ca.set_xyz(SIZE / 2 + 2, SIZE / 2, SIZE / 2, 3);
+    ca.set_xyz(SIZE / 2 + 2, SIZE / 2 + 1, SIZE / 2, 3);
+    ca.set_xyz(SIZE / 2 + 2, SIZE / 2, SIZE / 2 + 1, 3);
+    ca.set_xyz(SIZE / 2 + 2, SIZE / 2 + 1, SIZE / 2 + 1, 3);
+    ca.set_xyz(SIZE / 2 + 3, SIZE / 2, SIZE / 2, 4);
+    ca.set_xyz(SIZE / 2 + 3, SIZE / 2 + 1, SIZE / 2, 4);
+    ca.set_xyz(SIZE / 2 + 3, SIZE / 2, SIZE / 2 + 1, 4);
+    ca.set_xyz(SIZE / 2 + 3, SIZE / 2 + 1, SIZE / 2 + 1, 4);
+    ca.set_xyz(SIZE / 2 + 4, SIZE / 2, SIZE / 2, 5);
+    ca.set_xyz(SIZE / 2 + 4, SIZE / 2 + 1, SIZE / 2, 5);
+    ca.set_xyz(SIZE / 2 + 4, SIZE / 2, SIZE / 2 + 1, 5);
+    ca.set_xyz(SIZE / 2 + 4, SIZE / 2 + 1, SIZE / 2 + 1, 5);
+    let state_tints: Vec<[f32; 4]> = (0 .. 20)
+        .map(|x| {
+            let v = (x as f32) / 6.0;
+            [v, v, v, 1.0]
+        })
+        .collect();
     let mut cam = camera::Camera::default();
     // get colors for states
     /***************************************************\
@@ -226,7 +251,7 @@ fn main() {
         &[DescriptorSetLayoutBinding {
             binding: 0,
             ty: DescriptorType::UniformBuffer,
-            count: 2,
+            count: 1,
             stage_flags: ShaderStageFlags::VERTEX,
             immutable_samplers: false,
         }],
@@ -700,8 +725,12 @@ fn main() {
 
                 for (i, offset) in offsets.iter().enumerate() {
                     if ca.cells[i] > 0 {
+                        let push_constant = PushConstants {
+                            position: *offset,
+                            tint: state_tints[ca.cells[i] as usize],
+                        };
                         let push_constants = {
-                            let start_ptr = offset as *const PushConstants as *const u32;
+                            let start_ptr = &push_constant as *const PushConstants as *const u32;
                             unsafe { std::slice::from_raw_parts(start_ptr, num_push_constants) }
                         };
 
@@ -779,7 +808,7 @@ fn get_elapsed ( start: std::time::Instant ) -> f32 {
     start.elapsed().as_secs() as f32 + start.elapsed().subsec_millis() as f32 / 1000.0
 }
 
-fn get_cube_offsets ( ) -> Vec<PushConstants> {
+fn get_cube_offsets ( ) -> Vec<[f32; 3]> {
     let mut offsets = Vec::new();
     let half = (SIZE as f32) / 2.;
     for y in 0 .. SIZE {
@@ -787,10 +816,7 @@ fn get_cube_offsets ( ) -> Vec<PushConstants> {
             for z in 0 .. SIZE {
                 let (x, y, z) = (x as f32, y as f32, z as f32);
                 let position = [x - half, y - half, z - half];
-                let push_c = PushConstants {
-                    position,
-                };
-                offsets.push(push_c);
+                offsets.push(position);
             }
         }
     }
