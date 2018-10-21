@@ -87,7 +87,7 @@ impl CellA {
                             0
                         }
                     } else if count >= self.min_birth && count <= self.max_birth {
-                        1
+                        self.max_age
                     } else {
                         0
                     }
