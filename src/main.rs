@@ -10,7 +10,7 @@ extern crate glutin;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
-const SIZE: usize = 95;
+const SIZE: usize = 127;
 const DIMS: [f64; 2] = [1920.0, 1080.0];
 
 #[derive(Debug, Clone, Copy)]
@@ -95,10 +95,10 @@ fn main() {
         let (mut min_surv, mut max_surv, mut min_birth, mut max_birth);
         if args.len() == 5 {
             println!("Got args!");
-            min_birth = args[1].parse::<u8>().expect("Not an int!!!");
-            max_birth = args[2].parse::<u8>().expect("Not an int!!!");
-            min_surv = args[3].parse::<u8>().expect("Not an int!!!");
-            max_surv = args[4].parse::<u8>().expect("Not an int!!!");
+            min_surv = args[1].parse::<u8>().expect("Not an int!!!");
+            max_surv = args[2].parse::<u8>().expect("Not an int!!!");
+            min_birth = args[3].parse::<u8>().expect("Not an int!!!");
+            max_birth = args[4].parse::<u8>().expect("Not an int!!!");
         } else {
             println!("Not enough arguments, using defaults.");
             min_birth = 14;
@@ -110,14 +110,16 @@ fn main() {
         ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
     };
     ca.randomize();
-    // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2,         1);
-    // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2 + 1,     1);
-    // ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2,     1);
-    // ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2 + 1, 1);
-    // ca.set_xyz(SIZE / 2 + 1, SIZE / 2, SIZE / 2,         1);
-    // ca.set_xyz(SIZE / 2 + 1, SIZE / 2, SIZE / 2 + 1,     1);
-    // ca.set_xyz(SIZE / 2 + 1, SIZE / 2 + 1, SIZE / 2,     1);
-    // ca.set_xyz(SIZE / 2 + 1, SIZE / 2 + 1, SIZE / 2 + 1, 1);
+    // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2,             1);
+    // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2 + 1,         1);
+    // ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2,         1);
+    // ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2 + 1,     1);
+    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2, SIZE / 2 - 1,     1);
+    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 + 1, SIZE / 2 - 1,     1);
+    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2, SIZE / 2 + 2,     1);
+    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 + 1, SIZE / 2 + 2,     1);
+    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 - 1, SIZE / 2,     1);
+    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 - 1, SIZE / 2 + 1,     1);
 
     // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2, 1);
     let state_tints: Vec<[f32; 4]> = (0 .. 20)

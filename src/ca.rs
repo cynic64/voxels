@@ -18,7 +18,7 @@ pub struct CellA {
 impl CellA {
     pub fn new ( width: usize, height: usize, length: usize, min_surv: u8, max_surv: u8, min_birth: u8, max_birth: u8 ) -> Self {
         let cells = vec![0; width * height * length];
-        let max_age = 5;
+        let max_age = 2;
 
         Self {
             cells,
@@ -40,7 +40,7 @@ impl CellA {
 
     pub fn randomize ( &mut self ) {
         let cells = (0 .. self.width * self.height * self.length)
-            .map(|_| {
+            .map(|x| {
                 // if x < self.width * self.height {
                     if rand::random() {
                         1
@@ -109,6 +109,33 @@ impl CellA {
                     } else {
                         0
                     }
+
+                    // q-states
+                    // if cur_state > self.max_age / 2 {
+                    //     if self.min_surv <= count && count <= self.max_surv {
+                    //         if cur_state < self.max_age {
+                    //             cur_state + 1
+                    //         } else {
+                    //             self.max_age
+                    //         }
+                    //     } else {
+                    //         cur_state - 1
+                    //     }
+                    // } else {
+                    //     if self.min_birth <= count && count <= self.max_birth {
+                    //         if cur_state < self.max_age {
+                    //             cur_state + 1
+                    //         } else {
+                    //             self.max_age
+                    //         }
+                    //     } else {
+                    //         if cur_state > 0 {
+                    //             cur_state - 1
+                    //         } else {
+                    //             0
+                    //         }
+                    //     }
+                    // }
                 } else {
                     0
                 }
