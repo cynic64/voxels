@@ -18,7 +18,7 @@ pub struct CellA {
 impl CellA {
     pub fn new ( width: usize, height: usize, length: usize, min_surv: u8, max_surv: u8, min_birth: u8, max_birth: u8 ) -> Self {
         let cells = vec![0; width * height * length];
-        let max_age = 1;
+        let max_age = 5;
 
         Self {
             cells,
@@ -36,6 +36,24 @@ impl CellA {
     pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {
         let idx = (z * self.width * self.height) + (y * self.width) + x;
         self.cells[idx] = new_state;
+    }
+
+    pub fn randomize ( &mut self ) {
+        let cells = (0 .. self.width * self.height * self.length)
+            .map(|_| {
+                // if x < self.width * self.height {
+                    if rand::random() {
+                        1
+                    } else {
+                        0
+                    }
+                // } else {
+                //     0
+                // }
+            })
+            .collect();
+
+        self.cells = cells;
     }
 
     pub fn next_gen ( &mut self ) {
@@ -87,7 +105,7 @@ impl CellA {
                             0
                         }
                     } else if count >= self.min_birth && count <= self.max_birth {
-                        self.max_age
+                        1
                     } else {
                         0
                     }
