@@ -33,14 +33,68 @@ impl CellA {
         }
     }
 
-    pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {
-        let idx = (z * self.width * self.height) + (y * self.width) + x;
-        self.cells[idx] = new_state;
+    pub fn get_interesting_indices ( &self ) -> Vec<usize> {
+        let start = std::time::Instant::now();
+        let interesting_indices = self.cells
+            .iter()
+            .enumerate()
+            .filter_map(|e| {
+                let idx = e.0;
+                if (idx > self.width * self.height + self.length) && (idx < (self.width * self.height* self.length) - (self.width * self.height) - self.width - 1) {
+                    let neighbors = [
+                        self.cells[idx + (self.width * self.height) + self.width + 1],
+                        self.cells[idx + (self.width * self.height) + self.width    ],
+                        self.cells[idx + (self.width * self.height) + self.width - 1],
+                        self.cells[idx + (self.width * self.height)              + 1],
+                        self.cells[idx + (self.width * self.height)                 ],
+                        self.cells[idx + (self.width * self.height)              - 1],
+                        self.cells[idx + (self.width * self.height) - self.width + 1],
+                        self.cells[idx + (self.width * self.height) - self.width    ],
+                        self.cells[idx + (self.width * self.height) - self.width - 1],
+                        self.cells[idx                              + self.width + 1],
+                        self.cells[idx                              + self.width    ],
+                        self.cells[idx                              + self.width - 1],
+                        self.cells[idx                                           + 1],
+                        self.cells[idx                                           - 1],
+                        self.cells[idx                              - self.width + 1],
+                        self.cells[idx                              - self.width    ],
+                        self.cells[idx                              - self.width - 1],
+                        self.cells[idx - (self.width * self.height) + self.width + 1],
+                        self.cells[idx - (self.width * self.height) + self.width    ],
+                        self.cells[idx - (self.width * self.height) + self.width - 1],
+                        self.cells[idx - (self.width * self.height)              + 1],
+                        self.cells[idx - (self.width * self.height)                 ],
+                        self.cells[idx - (self.width * self.height)              - 1],
+                        self.cells[idx - (self.width * self.height) - self.width + 1],
+                        self.cells[idx - (self.width * self.height) - self.width    ],
+                        self.cells[idx - (self.width * self.height) - self.width - 1]
+                    ];
+
+                    let count: u8 = neighbors.iter().sum();
+                    if count == 26 {
+                        None
+                    } else {
+                        Some(idx)
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        println!("Interesting: {}%", (interesting_indices.len() as f32) / (self.cells.len() as f32) * 100.0);
+        println!("Took: {} s", super::utils::get_elapsed(start));
+
+        interesting_indices
     }
+
+    // pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {
+    //     let idx = (z * self.width * self.height) + (y * self.width) + x;
+    //     self.cells[idx] = new_state;
+    // }
 
     pub fn randomize ( &mut self ) {
         let cells = (0 .. self.width * self.height * self.length)
-            .map(|x| {
+            .map(|_| {
                 // if x < self.width * self.height {
                     if rand::random() {
                         1

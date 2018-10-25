@@ -90,89 +90,8 @@ use imports::*;
 
 fn main() {
     // cmd-line arguments
-    let mut ca = {
-        let mut args: Vec<_> = std::env::args().collect();
-        let (mut min_surv, mut max_surv, mut min_birth, mut max_birth);
-        if args.len() == 5 {
-            println!("Got args!");
-            min_surv = args[1].parse::<u8>().expect("Not an int!!!");
-            max_surv = args[2].parse::<u8>().expect("Not an int!!!");
-            min_birth = args[3].parse::<u8>().expect("Not an int!!!");
-            max_birth = args[4].parse::<u8>().expect("Not an int!!!");
-        } else {
-            println!("Not enough arguments, using defaults.");
-            min_birth = 14;
-            max_birth = 255;
-            min_surv = 12;
-            max_surv = 255;
-        }
-
-        ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
-    };
-    ca.randomize();
-    for _ in 0 .. 20 {
-        ca.next_gen();
-    }
-
-    let start = std::time::Instant::now();
-    let interesting_indices = ca.cells
-        .iter()
-        .enumerate()
-        .filter_map(|e| {
-            let idx = e.0;
-            if (idx > SIZE * SIZE + SIZE) && (idx < (SIZE * SIZE * SIZE) - (SIZE * SIZE) - SIZE - 1) {
-                let neighbors = [
-                    ca.cells[idx + (SIZE * SIZE) + SIZE + 1],
-                    ca.cells[idx + (SIZE * SIZE) + SIZE    ],
-                    ca.cells[idx + (SIZE * SIZE) + SIZE - 1],
-                    ca.cells[idx + (SIZE * SIZE)              + 1],
-                    ca.cells[idx + (SIZE * SIZE)                 ],
-                    ca.cells[idx + (SIZE * SIZE)              - 1],
-                    ca.cells[idx + (SIZE * SIZE) - SIZE + 1],
-                    ca.cells[idx + (SIZE * SIZE) - SIZE    ],
-                    ca.cells[idx + (SIZE * SIZE) - SIZE - 1],
-                    ca.cells[idx                              + SIZE + 1],
-                    ca.cells[idx                              + SIZE    ],
-                    ca.cells[idx                              + SIZE - 1],
-                    ca.cells[idx                                           + 1],
-                    ca.cells[idx                                           - 1],
-                    ca.cells[idx                              - SIZE + 1],
-                    ca.cells[idx                              - SIZE    ],
-                    ca.cells[idx                              - SIZE - 1],
-                    ca.cells[idx - (SIZE * SIZE) + SIZE + 1],
-                    ca.cells[idx - (SIZE * SIZE) + SIZE    ],
-                    ca.cells[idx - (SIZE * SIZE) + SIZE - 1],
-                    ca.cells[idx - (SIZE * SIZE)              + 1],
-                    ca.cells[idx - (SIZE * SIZE)                 ],
-                    ca.cells[idx - (SIZE * SIZE)              - 1],
-                    ca.cells[idx - (SIZE * SIZE) - SIZE + 1],
-                    ca.cells[idx - (SIZE * SIZE) - SIZE    ],
-                    ca.cells[idx - (SIZE * SIZE) - SIZE - 1]
-                ];
-
-                let count: u8 = neighbors.iter().sum();
-                if count == 26 {
-                    None
-                } else {
-                    Some(idx)
-                }
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-    println!("Interesting: {}%", (interesting_indices.len() as f32) / (ca.cells.len() as f32) * 100.0);
-    println!("Took: {} s", get_elapsed(start));
-    // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2,             1);
-    // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2 + 1,         1);
-    // ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2,         1);
-    // ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2 + 1,     1);
-    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2, SIZE / 2 - 1,     1);
-    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 + 1, SIZE / 2 - 1,     1);
-    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2, SIZE / 2 + 2,     1);
-    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 + 1, SIZE / 2 + 2,     1);
-    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 - 1, SIZE / 2,     1);
-    // ca.set_xyz(SIZE / 2 - 1, SIZE / 2 - 1, SIZE / 2 + 1,     1);
+    let mut ca = setup_ca_from_args();
+    let interesting_indices = ca.get_interesting_indices();
 
     // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2, 1);
     let state_tints: Vec<[f32; 4]> = (0 .. 20)
@@ -657,7 +576,7 @@ fn main() {
     \***************************************************/
     let mut last_frame = std::time::Instant::now();
     while !quitting {
-        let delta = get_elapsed(last_frame);
+        let delta = utils::get_elapsed(last_frame);
         last_frame = std::time::Instant::now();
         // If the window is closed, or Escape is pressed, quit
         events_loop.poll_events(|event| {
@@ -857,12 +776,8 @@ fn main() {
     device.free_memory(uniform_memory);
 
     // print avg. fps
-    let fps = (frame_count as f32) / get_elapsed(start);
+    let fps = (frame_count as f32) / utils::get_elapsed(start);
     println!("Avg. fps: {}", fps);
-}
-
-fn get_elapsed ( start: std::time::Instant ) -> f32 {
-    start.elapsed().as_secs() as f32 + start.elapsed().subsec_millis() as f32 / 1000.0
 }
 
 fn get_cube_offsets ( ) -> Vec<[f32; 3]> {
@@ -879,4 +794,32 @@ fn get_cube_offsets ( ) -> Vec<[f32; 3]> {
     }
 
     offsets
+}
+
+fn setup_ca_from_args ( ) -> ca::CellA {
+    let mut ca = {
+        let mut args: Vec<_> = std::env::args().collect();
+        let (mut min_surv, mut max_surv, mut min_birth, mut max_birth);
+        if args.len() == 5 {
+            println!("Got args!");
+            min_surv = args[1].parse::<u8>().expect("Not an int!!!");
+            max_surv = args[2].parse::<u8>().expect("Not an int!!!");
+            min_birth = args[3].parse::<u8>().expect("Not an int!!!");
+            max_birth = args[4].parse::<u8>().expect("Not an int!!!");
+        } else {
+            println!("Not enough arguments, using defaults.");
+            min_birth = 14;
+            max_birth = 255;
+            min_surv = 12;
+            max_surv = 255;
+        }
+
+        ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
+    };
+    ca.randomize();
+    for _ in 0 .. 20 {
+        ca.next_gen();
+    }
+
+    ca
 }

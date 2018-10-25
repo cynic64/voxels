@@ -1,6 +1,10 @@
 use gfx_hal::Backend;
 use imports::*;
 
+pub fn get_elapsed ( start: std::time::Instant ) -> f32 {
+    start.elapsed().as_secs() as f32 + start.elapsed().subsec_millis() as f32 / 1000.0
+}
+
 // TODO: make sure mesh is vec-like
 pub fn create_vertex_buffer<B: Backend, Vertex: Copy> (
     device: &B::Device,
