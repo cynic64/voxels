@@ -10,7 +10,7 @@ extern crate glutin;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
-const SIZE: usize = 127;
+const SIZE: usize = 255;
 const DIMS: [f64; 2] = [1920.0, 1080.0];
 
 #[derive(Debug, Clone, Copy)]
@@ -110,6 +110,59 @@ fn main() {
         ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
     };
     ca.randomize();
+    for _ in 0 .. 20 {
+        ca.next_gen();
+    }
+
+    let start = std::time::Instant::now();
+    let interesting_indices = ca.cells
+        .iter()
+        .enumerate()
+        .filter_map(|e| {
+            let idx = e.0;
+            if (idx > SIZE * SIZE + SIZE) && (idx < (SIZE * SIZE * SIZE) - (SIZE * SIZE) - SIZE - 1) {
+                let neighbors = [
+                    ca.cells[idx + (SIZE * SIZE) + SIZE + 1],
+                    ca.cells[idx + (SIZE * SIZE) + SIZE    ],
+                    ca.cells[idx + (SIZE * SIZE) + SIZE - 1],
+                    ca.cells[idx + (SIZE * SIZE)              + 1],
+                    ca.cells[idx + (SIZE * SIZE)                 ],
+                    ca.cells[idx + (SIZE * SIZE)              - 1],
+                    ca.cells[idx + (SIZE * SIZE) - SIZE + 1],
+                    ca.cells[idx + (SIZE * SIZE) - SIZE    ],
+                    ca.cells[idx + (SIZE * SIZE) - SIZE - 1],
+                    ca.cells[idx                              + SIZE + 1],
+                    ca.cells[idx                              + SIZE    ],
+                    ca.cells[idx                              + SIZE - 1],
+                    ca.cells[idx                                           + 1],
+                    ca.cells[idx                                           - 1],
+                    ca.cells[idx                              - SIZE + 1],
+                    ca.cells[idx                              - SIZE    ],
+                    ca.cells[idx                              - SIZE - 1],
+                    ca.cells[idx - (SIZE * SIZE) + SIZE + 1],
+                    ca.cells[idx - (SIZE * SIZE) + SIZE    ],
+                    ca.cells[idx - (SIZE * SIZE) + SIZE - 1],
+                    ca.cells[idx - (SIZE * SIZE)              + 1],
+                    ca.cells[idx - (SIZE * SIZE)                 ],
+                    ca.cells[idx - (SIZE * SIZE)              - 1],
+                    ca.cells[idx - (SIZE * SIZE) - SIZE + 1],
+                    ca.cells[idx - (SIZE * SIZE) - SIZE    ],
+                    ca.cells[idx - (SIZE * SIZE) - SIZE - 1]
+                ];
+
+                let count: u8 = neighbors.iter().sum();
+                if count == 26 {
+                    None
+                } else {
+                    Some(idx)
+                }
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    println!("Interesting: {}%", (interesting_indices.len() as f32) / (ca.cells.len() as f32) * 100.0);
+    println!("Took: {} s", get_elapsed(start));
     // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2,             1);
     // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2 + 1,         1);
     // ca.set_xyz(SIZE / 2, SIZE / 2 + 1, SIZE / 2,         1);
@@ -126,11 +179,11 @@ fn main() {
         .map(|x| {
             let v = (x as f32) / 20.0;
             if v < 0.33 {
-                [0.0, 0.0, v * 3.0, 1.0]
+                [0.0, 0.0, v * 20.0, 1.0]
             } else if v < 0.66 {
-                [0.0, v * 3.0, 0.0, 1.0]
+                [0.0, v * 20.0, 0.0, 1.0]
             } else {
-                [v * 3.0, 0.0, 0.0, 1.0]
+                [v * 20.0, 0.0, 0.0, 1.0]
             }
         })
         .collect();
@@ -723,11 +776,12 @@ fn main() {
                 // unless you're using instanced rendering.
                 let num_vertices = MESH.len() as u32;
 
-                for (i, offset) in offsets.iter().enumerate() {
-                    if ca.cells[i] > 0 {
+                for i in interesting_indices.iter() {
+                    if ca.cells[*i] > 0 {
+                        let offset = offsets[*i];
                         let push_constant = PushConstants {
-                            position: *offset,
-                            tint: state_tints[ca.cells[i] as usize],
+                            position: offset,
+                            tint: state_tints[ca.cells[*i] as usize],
                         };
                         let push_constants = {
                             let start_ptr = &push_constant as *const PushConstants as *const u32;
