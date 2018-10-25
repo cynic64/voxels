@@ -18,7 +18,7 @@ pub struct CellA {
 impl CellA {
     pub fn new ( width: usize, height: usize, length: usize, min_surv: u8, max_surv: u8, min_birth: u8, max_birth: u8 ) -> Self {
         let cells = vec![0; width * height * length];
-        let max_age = 2;
+        let max_age = 1;
 
         Self {
             cells,
