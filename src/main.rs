@@ -10,7 +10,7 @@ extern crate glutin;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
-const SIZE: usize = 255;
+const SIZE: usize = 127;
 const DIMS: [f64; 2] = [1920.0, 1080.0];
 
 #[derive(Debug, Clone, Copy)]
@@ -93,19 +93,7 @@ fn main() {
     let mut ca = setup_ca_from_args();
     let interesting_indices = ca.get_interesting_indices();
 
-    // ca.set_xyz(SIZE / 2, SIZE / 2, SIZE / 2, 1);
-    let state_tints: Vec<[f32; 4]> = (0 .. 20)
-        .map(|x| {
-            let v = (x as f32) / 20.0;
-            if v < 0.33 {
-                [0.0, 0.0, v * 20.0, 1.0]
-            } else if v < 0.66 {
-                [0.0, v * 20.0, 0.0, 1.0]
-            } else {
-                [v * 20.0, 0.0, 0.0, 1.0]
-            }
-        })
-        .collect();
+    let state_tints = get_state_tints();
     let mut cam = camera::Camera::default();
     // get colors for states
     /***************************************************\
@@ -822,4 +810,27 @@ fn setup_ca_from_args ( ) -> ca::CellA {
     }
 
     ca
+}
+
+fn get_state_tints ( ) -> Vec<[f32; 4]> {
+    // for multicolor
+    // let state_tints: Vec<[f32; 4]> = (0 .. 20)
+    //     .map(|x| {
+    //         let v = (x as f32) / 20.0;
+    //         if v < 0.33 {
+    //             [0.0, 0.0, v * 20.0, 1.0]
+    //         } else if v < 0.66 {
+    //             [0.0, v * 20.0, 0.0, 1.0]
+    //         } else {
+    //             [v * 20.0, 0.0, 0.0, 1.0]
+    //         }
+    //     })
+    //     .collect();
+
+    let state_tints = vec![
+        [0.0, 0.0, 0.0, 1.0],
+        [1.0, 1.0, 1.0, 1.0],
+    ];
+
+    state_tints
 }
