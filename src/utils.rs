@@ -64,7 +64,7 @@ pub fn create_vertex_buffer<B: Backend, Vertex: Copy> (
             .acquire_mapping_writer::<Vertex>(&buffer_memory, 0..buffer_len)
             .unwrap();
         dest.copy_from_slice(mesh);
-        device.release_mapping_writer(dest);
+        device.release_mapping_writer(dest).expect("Couldn't release mapping writer (utils).");
     }
 
     (buffer, buffer_memory)
@@ -120,7 +120,7 @@ pub fn fill_buffer<B: Backend, Item: Copy>(
         .acquire_mapping_writer::<Item>(&buffer_memory, 0..buffer_len)
         .unwrap();
     dest.copy_from_slice(items);
-    device.release_mapping_writer(dest);
+    device.release_mapping_writer(dest).expect("Couldn't release mapping writer (utils, fill_buffer).");
 }
 
 /// Creates a buffer and immediately fills it.

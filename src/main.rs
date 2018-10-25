@@ -210,7 +210,7 @@ fn main() {
     let mut surface = instance.create_surface(&window);
 
     // An adapter represents a physical device - such as a graphics card.
-    let mut adapter = instance.enumerate_adapters().remove(0);
+    let adapter = instance.enumerate_adapters().remove(0);
 
     // The device is a logical device allowing you to perform GPU operations.
     // The queue group contains a set of command queues which we can later submit
@@ -232,7 +232,7 @@ fn main() {
         &queue_group,
         CommandPoolCreateFlags::empty(),
         max_buffers,
-    );
+    ).expect("Couldn't create command pool.");
 
     let physical_device = &adapter.physical_device;
 
@@ -297,6 +297,7 @@ fn main() {
         };
 
         device.create_render_pass(&[color_attachment, depth_attachment], &[subpass], &[dependency])
+            .expect("Couldn't create render pass.")
     };
 
     // TODO: what is a descriptor set, what is the layout?
@@ -309,7 +310,7 @@ fn main() {
             immutable_samplers: false,
         }],
         &[],
-    );
+    ).expect("Couldn't create descriptor set layout.");
 
     // TODO: Explain size
     let num_push_constants = {
@@ -323,7 +324,8 @@ fn main() {
     let pipeline_layout = device.create_pipeline_layout(
         vec![&set_layout],
         &[(ShaderStageFlags::VERTEX, 0..(num_push_constants as u32))],
-    );
+    )
+    .expect("Pipeline layout creation failed");
 
     // Shader modules are needed to create a pipeline definition.
     // The shader is loaded from SPIR-V binary files.
@@ -448,7 +450,7 @@ fn main() {
             ty: DescriptorType::UniformBuffer,
             count: 2,
         }],
-    );
+    ).expect("Couldn't create descriptor pool.");
 
     // TODO: explain
     let desc_set = desc_pool.allocate_set(&set_layout).unwrap();
@@ -524,7 +526,8 @@ fn main() {
 
     let extent = swap_config.extent.to_extent();
 
-    let (mut swapchain, backbuffer) = device.create_swapchain(&mut surface, swap_config, None);
+    let (mut swapchain, backbuffer) = device.create_swapchain(&mut surface, swap_config, None)
+        .expect("Couldn't create swapchain!");
 
     // Here's where we create the new stuff:
     // TODO: Explain it all
@@ -637,8 +640,8 @@ fn main() {
     //
     // The frame fence is used to to allow us to wait until our draw commands have
     // finished before attempting to display the image.
-    let frame_semaphore = device.create_semaphore();
-    let frame_fence = device.create_fence(false);
+    let frame_semaphore = device.create_semaphore().expect("Can't create semaphore.");
+    let frame_fence = device.create_fence(false).expect("Couldn't create fence.");
 
     let mut quitting = false;
     let start = std::time::Instant::now();
@@ -700,7 +703,7 @@ fn main() {
         // update view matrix
         let view: [[f32; 4]; 4] = cam.get_view_matrix().into();
 
-        device.reset_fence(&frame_fence);
+        device.reset_fence(&frame_fence).expect("Couldn't reset fence.");
         command_pool.reset();
 
         // A swapchain contains multiple images - which one should we draw on? This
@@ -817,7 +820,7 @@ fn main() {
         queue_group.queues[0].submit(submission, Some(&frame_fence));
 
         // We first wait for the rendering to complete...
-        device.wait_for_fence(&frame_fence, !0);
+        device.wait_for_fence(&frame_fence, !0).expect("Couldn't wait for fence, what the fuck?");
 
         // ...and then present the image on screen!
         swapchain
