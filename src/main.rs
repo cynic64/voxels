@@ -95,11 +95,14 @@ fn main() {
 
     let state_tints = get_state_tints();
     let mut cam = camera::Camera::default();
+
+    let offsets = get_cube_offsets();
+
     // get colors for states
     /***************************************************\
     |                   S E T U P                       |
     \***************************************************/
-    // Create a window with winit.
+    // Windowing
     let mut events_loop = EventsLoop::new();
 
     let window = WindowBuilder::new()
@@ -110,30 +113,16 @@ fn main() {
 
     window.hide_cursor(true);
 
-    // The Instance serves as an entry point to the graphics API
+    // Creation
     let instance = backend::Instance::create("Part 00: Triangle", 1);
-
-    // The surface is an abstraction for the OS's native window.
     let mut surface = instance.create_surface(&window);
-
-    // An adapter represents a physical device - such as a graphics card.
     let adapter = instance.enumerate_adapters().remove(0);
 
-    // The device is a logical device allowing you to perform GPU operations.
-    // The queue group contains a set of command queues which we can later submit
-    // drawing commands to.
-    //
-    // Here we're requesting 1 queue, with the `Graphics` capability so we can do
-    // rendering. We also pass a closure to choose the first queue family that our
-    // surface supports to allocate queues from. More on queue families in a later
-    // tutorial.
     let num_queues = 1;
     let (device, mut queue_group) = adapter
         .open_with::<_, Graphics>(num_queues, |family| surface.supports_queue_family(family))
         .unwrap();
 
-    // A command pool is used to acquire command buffers - which are used to
-    // send drawing instructions to the GPU.
     let max_buffers = 16;
     let mut command_pool = device.create_command_pool_typed(
         &queue_group,
@@ -142,15 +131,9 @@ fn main() {
     ).expect("Couldn't create command pool.");
 
     let physical_device = &adapter.physical_device;
-
-    // We want to get the capabilities (`caps`) of the surface, which tells us what
-    // parameters we can use for our swapchain later. We also get a list of supported
-    // image formats for our surface.
     let (caps, formats, _) = surface.compatibility(physical_device);
 
     let surface_color_format = {
-        // We must pick a color format from the list of supported formats. If there
-        // is no list, we default to Rgba8Srgb.
         match formats {
             Some(choices) => choices
                 .into_iter()
@@ -160,13 +143,9 @@ fn main() {
         }
     };
 
-    // TODO: How do we choose this correctly?
+    // Depth buffer type
     let depth_format = Format::D32FloatS8Uint;
 
-    // A render pass defines which attachments (images) are to be used for what
-    // purposes. Right now, we only have a color attachment for the final output,
-    // but eventually we might have depth/stencil attachments, or even other color
-    // attachments for other purposes.
     let render_pass = {
         let color_attachment = Attachment {
             format: Some(surface_color_format),
@@ -175,8 +154,6 @@ fn main() {
             stencil_ops: AttachmentOps::DONT_CARE,
             layouts: Layout::Undefined..Layout::Present,
         };
-
-        // TODO: Explain
         let depth_attachment = Attachment {
             format: Some(depth_format),
             samples: 1,
@@ -184,8 +161,6 @@ fn main() {
             stencil_ops: AttachmentOps::DONT_CARE,
             layouts: Layout::Undefined..Layout::DepthStencilAttachmentOptimal,
         };
-
-        // A render pass could have multiple subpasses - but we're using one for now.
         let subpass = SubpassDesc {
             colors: &[(0, Layout::ColorAttachmentOptimal)],
             depth_stencil: Some(&(1, Layout::DepthStencilAttachmentOptimal)),
@@ -193,9 +168,6 @@ fn main() {
             resolves: &[],
             preserves: &[],
         };
-
-        // This expresses the dependencies between subpasses. Again, we only have
-        // one subpass for now. Future tutorials may go into more detail.
         let dependency = SubpassDependency {
             passes: SubpassRef::External..SubpassRef::Pass(0),
             stages: PipelineStage::COLOR_ATTACHMENT_OUTPUT..PipelineStage::COLOR_ATTACHMENT_OUTPUT,
@@ -207,7 +179,7 @@ fn main() {
             .expect("Couldn't create render pass.")
     };
 
-    // TODO: what is a descriptor set, what is the layout?
+    // Uniform buffer magic
     let set_layout = device.create_descriptor_set_layout(
         &[DescriptorSetLayoutBinding {
             binding: 0,
@@ -219,7 +191,7 @@ fn main() {
         &[],
     ).expect("Couldn't create descriptor set layout.");
 
-    // TODO: Explain size
+    // Push constant magic
     let num_push_constants = {
         let size_in_bytes = std::mem::size_of::<PushConstants>();
         let size_of_push_constant = std::mem::size_of::<u32>();
@@ -234,8 +206,7 @@ fn main() {
     )
     .expect("Pipeline layout creation failed");
 
-    // Shader modules are needed to create a pipeline definition.
-    // The shader is loaded from SPIR-V binary files.
+    // Shaders
     let vertex_shader_module = {
         let spirv = include_bytes!("../shaders/uniform.vert.spv");
         device.create_shader_module(spirv).unwrap()
@@ -246,22 +217,17 @@ fn main() {
         device.create_shader_module(spirv).unwrap()
     };
 
-    // A pipeline object encodes almost all the state you need in order to draw
-    // geometry on screen. For now that's really only which shaders to use, what
-    // kind of blending to do, and what kind of primitives to draw.
     let pipeline = {
         let vs_entry = EntryPoint::<backend::Backend> {
             entry: "main",
             module: &vertex_shader_module,
             specialization: Default::default(),
         };
-
         let fs_entry = EntryPoint::<backend::Backend> {
             entry: "main",
             module: &fragment_shader_module,
             specialization: Default::default(),
         };
-
         let shader_entries = GraphicsShaderSet {
             vertex: vs_entry,
             hull: None,
@@ -269,12 +235,10 @@ fn main() {
             geometry: None,
             fragment: Some(fs_entry),
         };
-
         let subpass = Subpass {
             index: 0,
             main_pass: &render_pass,
         };
-
         let mut pipeline_desc = GraphicsPipelineDesc::new(
             shader_entries,
             Primitive::TriangleList,
@@ -295,16 +259,11 @@ fn main() {
             .targets
             .push(ColorBlendDesc(ColorMask::ALL, BlendState::ALPHA));
 
-        // We need to let our pipeline know about all the different formats of
-        // vertex buffer we're going to use. The `binding` number is an ID for
-        // this entry. The `stride` how the size of one element (vertex) in bytes.
-        // The `rate` is used for instanced rendering, so we'll ignore it for now.
         pipeline_desc.vertex_buffers.push(VertexBufferDesc {
             binding: 0,
             stride: std::mem::size_of::<Vertex>() as u32,
             rate: 0,
         });
-
 
         // We have to declare our two vertex attributes: position and color.
         // Note that their locations have to match the locations in the shader, and
@@ -316,7 +275,6 @@ fn main() {
         // Additionally, the second attribute must have an offset of 12 bytes in the
         // vertex, because this is the size of the first field. The `binding`
         // parameter refers back to the ID we gave in VertexBufferDesc.
-
         pipeline_desc.attributes.push(AttributeDesc {
             location: 0,
             binding: 0,
@@ -325,7 +283,6 @@ fn main() {
                 offset: 0,
             },
         });
-
         pipeline_desc.attributes.push(AttributeDesc {
             location: 1,
             binding: 0,
@@ -335,7 +292,6 @@ fn main() {
             },
         });
 
-        // Depth stencil
         pipeline_desc.depth_stencil = DepthStencilDesc {
             depth: DepthTest::On {
                 fun: Comparison::Less,
@@ -350,7 +306,7 @@ fn main() {
             .unwrap()
     };
 
-    // TODO: explain the pool and parameters
+    // More uni buffer magic
     let mut desc_pool = device.create_descriptor_pool(
         1,
         &[DescriptorRangeDesc {
@@ -359,22 +315,17 @@ fn main() {
         }],
     ).expect("Couldn't create descriptor pool.");
 
-    // TODO: explain
     let desc_set = desc_pool.allocate_set(&set_layout).unwrap();
 
-    // We get a list of the available memory types here so we can choose one later.
     let memory_types = physical_device.memory_properties().memory_types;
-
-    // Here's where we create the buffer itself, and the memory to hold it.
-    let (vertex_buffer, vertex_buffer_memory) =
+    let (vertex_buffer, _vertex_buffer_memory) =
         utils::create_vertex_buffer::<backend::Backend, Vertex>(
             &device,
             &memory_types,
             MESH
         );
 
-    println!("{:?}", vertex_buffer_memory);
-
+    // mvp
     let model = glm::scale(
         &glm::Mat4::identity(),
         &glm::vec3(0.01, 0.01, 0.01),
@@ -395,7 +346,7 @@ fn main() {
         100_000.
         ).into();
 
-    // TODO: Explain both buffer and default value
+    // Mooooore uni buffer magic
     let (uniform_buffer, mut uniform_memory) = utils::create_buffer::<backend::Backend, UniformBlock>(
         &device,
         &memory_types,
@@ -404,7 +355,6 @@ fn main() {
         &[ UniformBlock { model, view, projection } ]
     );
 
-    // TODO: What is this even?
     device.write_descriptor_sets(vec![DescriptorSetWrite {
         set: &desc_set,
         binding: 0,
@@ -412,32 +362,17 @@ fn main() {
         descriptors: Some(Descriptor::Buffer(&uniform_buffer, None..None)),
     }]);
 
-    // push-constants
-    let offsets = get_cube_offsets();
 
-    // Initialize our swapchain, images, framebuffers, etc.
-    // We expect to have to rebuild these when the window is resized -
-    // however we're going to ignore that for this example.
-
-    // A swapchain is effectively a chain of images (commonly two) that will be
-    // displayed to the screen. While one is being displayed, we can draw to one
-    // of the others.
-    //
-    // In a rare instance of the API creating resources for you, the backbuffer
-    // contains the actual images that make up the swapchain. We'll create image
-    // views and framebuffers from these next.
-    //
-    // We also want to store the swapchain's extent, which tells us how big each
-    // image is.
+    // swapchain stuff
+    // idk
     let swap_config = SwapchainConfig::from_caps(&caps, surface_color_format);
-
     let extent = swap_config.extent.to_extent();
 
     let (mut swapchain, backbuffer) = device.create_swapchain(&mut surface, swap_config, None)
         .expect("Couldn't create swapchain!");
 
-    // Here's where we create the new stuff:
-    // TODO: Explain it all
+    // depth buffeeeeeeeeeeeeeeeeeeeeeer!
+    // TODO: move this to utils, should be ez
     let (_depth_image, _depth_image_memory, depth_image_view) = {
         let kind =
             img::Kind::D2(extent.width as img::Size, extent.height as img::Size, 1, 1);
@@ -487,22 +422,7 @@ fn main() {
         (depth_image, depth_image_memory, depth_image_view)
     };
 
-
-    // You can think of an image as just the raw binary of the literal image, with
-    // additional metadata about the format.
-    //
-    // Accessing the image must be done through an image view - which is more or
-    // less a sub-range of the base image. For example, it could be one 2D slice of
-    // a 3D texture. In many cases, the view will just be of the whole image. You
-    // can also use an image view to swizzle or reinterpret the image format, but
-    // we don't need to do any of this right now.
-    //
-    // Framebuffers bind certain image views to certain attachments. So for example,
-    // if your render pass requires one color, and one depth, attachment - the
-    // framebuffer chooses specific image views for each one.
-    //
-    // Here we create an image view and a framebuffer for each image in our
-    // swapchain.
+    // yeah idk
     let (frame_views, framebuffers) = match backbuffer {
         Backbuffer::Images(images) => {
             let color_range = SubresourceRange {
@@ -535,9 +455,7 @@ fn main() {
             (image_views, fbos)
         }
 
-        // This arm of the branch is currently only used by the OpenGL backend,
-        // which supplies an opaque framebuffer for you instead of giving you control
-        // over individual images.
+        // for opengl
         Backbuffer::Framebuffer(fbo) => (vec![], vec![fbo]),
     };
 
@@ -550,6 +468,7 @@ fn main() {
     let frame_semaphore = device.create_semaphore().expect("Can't create semaphore.");
     let frame_fence = device.create_fence(false).expect("Couldn't create fence.");
 
+    // stuff for the mainloop
     let mut quitting = false;
     let start = std::time::Instant::now();
     let mut frame_count = 0;
@@ -558,11 +477,12 @@ fn main() {
         w: bool, a: bool, s: bool, d: bool
     }
     let mut keys_pressed = KeysPressed { w: false, a: false, s: false, d: false };
+    let mut last_frame = std::time::Instant::now();
+
     // Mainloop starts here
     /***************************************************\
     |                M A I N L O O P                    |
     \***************************************************/
-    let mut last_frame = std::time::Instant::now();
     while !quitting {
         let delta = utils::get_elapsed(last_frame);
         last_frame = std::time::Instant::now();
@@ -636,8 +556,6 @@ fn main() {
         let finished_command_buffer = {
             let mut command_buffer = command_pool.acquire_command_buffer(false);
 
-            // Define a rectangle on screen to draw into.
-            // In this case, the whole screen.
             let viewport = Viewport {
                 rect: Rect {
                     x: 0,
