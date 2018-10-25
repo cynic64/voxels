@@ -10,7 +10,7 @@ extern crate glutin;
 extern crate nalgebra_glm as glm;
 extern crate rand;
 
-const SIZE: usize = 127;
+const SIZE: usize = 255;
 const DIMS: [f64; 2] = [1920.0, 1080.0];
 
 #[derive(Debug, Clone, Copy)]
@@ -90,13 +90,13 @@ use imports::*;
 
 fn main() {
     // cmd-line arguments
+    let offsets = get_cube_offsets();
     let mut ca = setup_ca_from_args();
-    let interesting_indices = ca.get_interesting_indices();
+    ca.update_visible();
+    let mut interesting_indices = ca.get_near_and_visible(&offsets, &glm::vec3(0.0, 0.0, 0.0));
 
     let state_tints = get_state_tints();
     let mut cam = camera::Camera::default();
-
-    let offsets = get_cube_offsets();
 
     // get colors for states
     /***************************************************\
@@ -469,9 +469,9 @@ fn main() {
     let frame_fence = device.create_fence(false).expect("Couldn't create fence.");
 
     // stuff for the mainloop
+    let mut frame_count = 0;
     let mut quitting = false;
     let start = std::time::Instant::now();
-    let mut frame_count = 0;
 
     struct KeysPressed {
         w: bool, a: bool, s: bool, d: bool
@@ -526,9 +526,15 @@ fn main() {
         if keys_pressed.a { cam.move_left(delta); }
         if keys_pressed.d { cam.move_right(delta); }
 
+        // update interesting indices every x frames
+        if frame_count % 30 == 0 {
+            interesting_indices = ca.get_near_and_visible(&offsets, &cam.position);
+        }
+
         // Start rendering
         // update view matrix
         let view: [[f32; 4]; 4] = cam.get_view_matrix().into();
+        // println!("Camera position: {:?}", cam.position);
 
         device.reset_fence(&frame_fence).expect("Couldn't reset fence.");
         command_pool.reset();
@@ -723,7 +729,7 @@ fn setup_ca_from_args ( ) -> ca::CellA {
         ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
     };
     ca.randomize();
-    for _ in 0 .. 20 {
+    for _ in 0 .. 40 {
         ca.next_gen();
     }
 

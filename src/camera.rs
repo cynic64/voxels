@@ -3,7 +3,7 @@ extern crate nalgebra_glm as glm;
 use glm::*;
 
 pub struct Camera {
-    position: Vec3,
+    pub position: Vec3,
     front: Vec3,
     up: Vec3,
     right: Vec3,

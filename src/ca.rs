@@ -1,10 +1,12 @@
 extern crate rand;
 extern crate rayon;
 extern crate bytecount;
+extern crate nalgebra_glm as glm;
 use self::rayon::prelude::*;
 
 pub struct CellA {
     pub cells: Vec<u8>,
+    visible_cells: Vec<usize>,
     width: usize,
     height: usize,
     length: usize,
@@ -22,6 +24,7 @@ impl CellA {
 
         Self {
             cells,
+            visible_cells: Vec::new(),
             width,
             height,
             length,
@@ -33,10 +36,10 @@ impl CellA {
         }
     }
 
-    pub fn get_interesting_indices ( &self ) -> Vec<usize> {
+    pub fn update_visible ( &mut self ) {
         let start = std::time::Instant::now();
-        let interesting_indices = self.cells
-            .iter()
+        self.visible_cells = self.cells
+            .par_iter()
             .enumerate()
             .filter_map(|e| {
                 let idx = e.0;
@@ -81,10 +84,28 @@ impl CellA {
                 }
             })
             .collect::<Vec<_>>();
-        println!("Interesting: {}%", (interesting_indices.len() as f32) / (self.cells.len() as f32) * 100.0);
-        println!("Took: {} s", super::utils::get_elapsed(start));
+        println!("Updating visible cells took: {} s", super::utils::get_elapsed(start));
+    }
 
-        interesting_indices
+    pub fn get_near_and_visible ( &self, cube_offsets: &[[f32; 3]], camera_position: &glm::Vec3 ) -> Vec<usize> {
+        self.visible_cells.par_iter()
+            .filter_map(|&idx| {
+                // correct for vs scaling
+                let offset = cube_offsets[idx].iter().map(|&x| (x as f32) / 100.0).collect::<Vec<_>>();
+
+                let distance = glm::distance(
+                    camera_position,
+                    &glm::vec3(offset[0], offset[1], offset[2])
+                );
+
+                // arbitrary threshold
+                if distance < 1.0 {
+                    Some(idx)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     // pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {
