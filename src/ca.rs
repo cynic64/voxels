@@ -105,7 +105,7 @@ impl CellA {
             .map(|sec_idx| {
                 // get true center x y z
                 let sec_z = sec_idx / (num_sectors_z * num_sectors_y);
-                let sec_y = (sec_idx % (num_sectors_z * num_sectors_y)) / num_sectors_y;
+                let sec_y = (sec_idx % (num_sectors_y * num_sectors_x)) / num_sectors_y;
                 let sec_x = sec_idx % num_sectors_x;
 
                 let center_x = (sec_x * sector_size) as f32;
@@ -113,7 +113,7 @@ impl CellA {
                 let center_z = (sec_z * sector_size) as f32;
 
                 // filter visible to only include near
-                self.visible_cells.par_iter()
+                self.visible_cells.iter()
                     .filter_map(|&idx| {
                         let distance = glm::distance(
                             &glm::vec3(center_x as f32, center_y as f32, center_z as f32),
@@ -135,13 +135,18 @@ impl CellA {
 
     pub fn get_near_and_visible ( &self, camera_position: &glm::Vec3 ) -> Vec<usize> {
         // todo: no magic numbers
-        let scaled_x = (camera_position.x / (self.width as f32) * 32.0) as usize;
-        let scaled_y = (camera_position.y / (self.height as f32) * 32.0) as usize;
-        let scaled_z = (camera_position.z / (self.length as f32) * 32.0) as usize;
+        let sector_size = 32;
+        let num_sectors_x = (self.width  / sector_size) as f32;
+        let num_sectors_y = (self.height / sector_size) as f32;
+        let num_sectors_z = (self.length / sector_size) as f32;
+        let scaled_x = (camera_position.x / (self.width  as f32) * num_sectors_x) as usize;
+        let scaled_y = (camera_position.y / (self.height as f32) * num_sectors_y) as usize;
+        let scaled_z = (camera_position.z / (self.length as f32) * num_sectors_z) as usize;
+        println!("Scaled xyz: {}, {}, {}", scaled_x, scaled_y, scaled_z);
 
-        let sector_idx = scaled_z * (self.width * self.height) + scaled_y * self.width + scaled_x;
+        let sector_idx = scaled_z * (num_sectors_x as usize * num_sectors_y as usize) + scaled_y * num_sectors_x as usize + scaled_x;
 
-        self.sectors[sector_idx].clone()
+        self.sectors[sector_idx as usize].clone()
     }
 
     // pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {

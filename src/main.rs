@@ -699,12 +699,11 @@ fn main() {
 
 fn get_cube_offsets ( ) -> Vec<[f32; 3]> {
     let mut offsets = Vec::new();
-    let half = (SIZE as f32) / 2.;
-    for y in 0 .. SIZE {
-        for x in 0 .. SIZE {
-            for z in 0 .. SIZE {
+    for z in 0 .. SIZE {
+        for y in 0 .. SIZE {
+            for x in 0 .. SIZE {
                 let (x, y, z) = (x as f32, y as f32, z as f32);
-                let position = [x - half, y - half, z - half];
+                let position = [x, y, z];
                 offsets.push(position);
             }
         }
