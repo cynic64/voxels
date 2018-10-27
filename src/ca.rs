@@ -7,6 +7,7 @@ use self::rayon::prelude::*;
 pub struct CellA {
     pub cells: Vec<u8>,
     visible_cells: Vec<usize>,
+    sectors: Vec<Vec<usize>>,
     width: usize,
     height: usize,
     length: usize,
@@ -25,6 +26,7 @@ impl CellA {
         Self {
             cells,
             visible_cells: Vec::new(),
+            sectors: Vec::new(),
             width,
             height,
             length,
@@ -87,25 +89,59 @@ impl CellA {
         println!("Updating visible cells took: {} s", super::utils::get_elapsed(start));
     }
 
-    pub fn get_near_and_visible ( &self, cube_offsets: &[[f32; 3]], camera_position: &glm::Vec3 ) -> Vec<usize> {
-        self.visible_cells.par_iter()
-            .filter_map(|&idx| {
-                // correct for vs scaling
-                let offset = cube_offsets[idx].iter().map(|&x| (x as f32) / 100.0).collect::<Vec<_>>();
+    pub fn recalculate_sectors ( &mut self, cube_offsets: &[[f32; 3]] ) {
+        let start = std::time::Instant::now();
+        // sectors are also organized in z * (width * height) + y * width + x, corresponding to camera position
+        // sectors are 32x32x32
+        let sector_size = 32;
+        // todo: did I get these right?
+        let num_sectors_x = self.width / sector_size;
+        let num_sectors_y = self.height / sector_size;
+        let num_sectors_z = self.length / sector_size;
+        let total_sectors = num_sectors_x * num_sectors_y * num_sectors_z;
 
-                let distance = glm::distance(
-                    camera_position,
-                    &glm::vec3(offset[0], offset[1], offset[2])
-                );
+        self.sectors = (0 .. total_sectors)
+            .into_par_iter()
+            .map(|sec_idx| {
+                // get true center x y z
+                let sec_z = sec_idx / (num_sectors_z * num_sectors_y);
+                let sec_y = (sec_idx % (num_sectors_z * num_sectors_y)) / num_sectors_y;
+                let sec_x = sec_idx % num_sectors_x;
 
-                // arbitrary threshold
-                if distance < 1.0 {
-                    Some(idx)
-                } else {
-                    None
-                }
+                let center_x = (sec_x * sector_size) as f32;
+                let center_y = (sec_y * sector_size) as f32;
+                let center_z = (sec_z * sector_size) as f32;
+
+                // filter visible to only include near
+                self.visible_cells.par_iter()
+                    .filter_map(|&idx| {
+                        let distance = glm::distance(
+                            &glm::vec3(center_x as f32, center_y as f32, center_z as f32),
+                            &glm::vec3(cube_offsets[idx][0], cube_offsets[idx][1], cube_offsets[idx][2])
+                        );
+
+                        // arbitrary threshold
+                        if distance < 60.0 {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<usize>>()
             })
-            .collect()
+            .collect::<Vec<Vec<usize>>>();
+        println!("Calculating sectors took: {} s", super::utils::get_elapsed(start));
+    }
+
+    pub fn get_near_and_visible ( &self, camera_position: &glm::Vec3 ) -> Vec<usize> {
+        // todo: no magic numbers
+        let scaled_x = (camera_position.x / (self.width as f32) * 32.0) as usize;
+        let scaled_y = (camera_position.y / (self.height as f32) * 32.0) as usize;
+        let scaled_z = (camera_position.z / (self.length as f32) * 32.0) as usize;
+
+        let sector_idx = scaled_z * (self.width * self.height) + scaled_y * self.width + scaled_x;
+
+        self.sectors[sector_idx].clone()
     }
 
     // pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {

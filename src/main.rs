@@ -93,7 +93,8 @@ fn main() {
     let offsets = get_cube_offsets();
     let mut ca = setup_ca_from_args();
     ca.update_visible();
-    let mut interesting_indices = ca.get_near_and_visible(&offsets, &glm::vec3(0.0, 0.0, 0.0));
+    ca.recalculate_sectors(&offsets);
+    let mut interesting_indices = ca.get_near_and_visible(&glm::vec3(0.0, 0.0, 0.0));
 
     let state_tints = get_state_tints();
     let mut cam = camera::Camera::default();
@@ -248,7 +249,7 @@ fn main() {
                 front_face: FrontFace::CounterClockwise,
                 depth_clamping: false,
                 depth_bias: None,
-                conservative: true,
+                conservative: false,
             },
             &pipeline_layout,
             subpass,
@@ -328,7 +329,7 @@ fn main() {
     // mvp
     let model = glm::scale(
         &glm::Mat4::identity(),
-        &glm::vec3(0.01, 0.01, 0.01),
+        &glm::vec3(1.0, 1.0, 1.0),
         ).into();
     let view = glm::look_at(
         &glm::vec3(1., 0., 1.),
@@ -484,6 +485,8 @@ fn main() {
     |                M A I N L O O P                    |
     \***************************************************/
     while !quitting {
+        cam.print_position();
+
         let delta = utils::get_elapsed(last_frame);
         last_frame = std::time::Instant::now();
         // If the window is closed, or Escape is pressed, quit
@@ -531,7 +534,7 @@ fn main() {
 
         // update interesting indices every x frames
         if frame_count % 30 == 0 {
-            interesting_indices = ca.get_near_and_visible(&offsets, &cam.position);
+            interesting_indices = ca.get_near_and_visible(&cam.position);
         }
 
         // Start rendering

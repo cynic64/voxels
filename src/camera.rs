@@ -30,10 +30,14 @@ impl Camera {
         let right = vec3(0.0, 0.0, 0.0);
         let up = vec3(0.0, 1.0, 0.0);
         let world_up = vec3(0.0, 1.0, 0.0);
-        let movement_speed = 0.3;
-        let mouse_sens = 0.001;
+        let movement_speed = 10.0;
+        let mouse_sens = 0.0004;
 
         Camera { position, front, up, right, world_up, pitch, yaw, movement_speed, mouse_sens }
+    }
+
+    pub fn print_position ( &self) {
+        println!("Camera position: x: {}, y: {}, z: {}", self.position.x, self.position.y, self.position.z);
     }
 
     pub fn get_view_matrix ( &self ) ->  Mat4 {
