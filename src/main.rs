@@ -540,7 +540,6 @@ fn main() {
         // Start rendering
         // update view matrix
         let view: [[f32; 4]; 4] = cam.get_view_matrix().into();
-        // println!("Camera position: {:?}", cam.position);
 
         device.reset_fence(&frame_fence).expect("Couldn't reset fence.");
         command_pool.reset();
