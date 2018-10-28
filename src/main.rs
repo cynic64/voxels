@@ -485,7 +485,7 @@ fn main() {
     |                M A I N L O O P                    |
     \***************************************************/
     while !quitting {
-        cam.print_position();
+        // cam.print_position();
 
         let delta = utils::get_elapsed(last_frame);
         last_frame = std::time::Instant::now();
@@ -733,7 +733,8 @@ fn setup_ca_from_args ( ) -> ca::CellA {
         ca::CellA::new(SIZE, SIZE, SIZE, min_surv, max_surv, min_birth, max_birth)
     };
     ca.randomize();
-    for _ in 0 .. 40 {
+    for i in 0 .. 20 {
+        println!("Gen {}...", i);
         ca.next_gen();
     }
 
@@ -742,7 +743,7 @@ fn setup_ca_from_args ( ) -> ca::CellA {
 
 fn get_state_tints ( ) -> Vec<[f32; 4]> {
     // for multicolor
-    // let state_tints: Vec<[f32; 4]> = (0 .. 20)
+    // let state_tints: Vec<[f32; 4]> = (0 .. 1)
     //     .map(|x| {
     //         let v = (x as f32) / 20.0;
     //         if v < 0.33 {

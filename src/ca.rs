@@ -92,7 +92,6 @@ impl CellA {
     pub fn recalculate_sectors ( &mut self, cube_offsets: &[[f32; 3]] ) {
         let start = std::time::Instant::now();
         // sectors are also organized in z * (width * height) + y * width + x, corresponding to camera position
-        // sectors are 32x32x32
         let sector_size = 32;
         // todo: did I get these right?
         let num_sectors_x = self.width / sector_size;
@@ -103,14 +102,17 @@ impl CellA {
         self.sectors = (0 .. total_sectors)
             .into_par_iter()
             .map(|sec_idx| {
+                if sec_idx % 100 == 0 {
+                    println!("Sectors: {}% done", (sec_idx as f32) / (total_sectors as f32) * 100.0);
+                }
                 // get true center x y z
                 let sec_z = sec_idx / (num_sectors_z * num_sectors_y);
                 let sec_y = (sec_idx % (num_sectors_y * num_sectors_x)) / num_sectors_y;
                 let sec_x = sec_idx % num_sectors_x;
 
-                let center_x = (sec_x * sector_size) as f32;
-                let center_y = (sec_y * sector_size) as f32;
-                let center_z = (sec_z * sector_size) as f32;
+                let center_x = ((sec_x * sector_size) + sector_size / 2) as f32;
+                let center_y = ((sec_y * sector_size) + sector_size / 2) as f32;
+                let center_z = ((sec_z * sector_size) + sector_size / 2) as f32;
 
                 // filter visible to only include near
                 self.visible_cells.iter()
@@ -121,7 +123,7 @@ impl CellA {
                         );
 
                         // arbitrary threshold
-                        if distance < 60.0 {
+                        if distance < 100.0 {
                             Some(idx)
                         } else {
                             None
@@ -136,17 +138,16 @@ impl CellA {
     pub fn get_near_and_visible ( &self, camera_position: &glm::Vec3 ) -> Vec<usize> {
         // todo: no magic numbers
         let sector_size = 32;
-        let num_sectors_x = (self.width  / sector_size) as f32;
-        let num_sectors_y = (self.height / sector_size) as f32;
-        let num_sectors_z = (self.length / sector_size) as f32;
-        let scaled_x = (camera_position.x / (self.width  as f32) * num_sectors_x) as usize;
-        let scaled_y = (camera_position.y / (self.height as f32) * num_sectors_y) as usize;
-        let scaled_z = (camera_position.z / (self.length as f32) * num_sectors_z) as usize;
-        println!("Scaled xyz: {}, {}, {}", scaled_x, scaled_y, scaled_z);
+        let num_sectors_x = self.width  / sector_size;
+        let num_sectors_y = self.height / sector_size;
+        let num_sectors_z = self.length / sector_size;
+        let scaled_x = (camera_position.x / (self.width  as f32) * (num_sectors_x as f32)) as usize;
+        let scaled_y = (camera_position.y / (self.height as f32) * (num_sectors_y as f32)) as usize;
+        let scaled_z = (camera_position.z / (self.length as f32) * (num_sectors_z as f32)) as usize;
 
-        let sector_idx = scaled_z * (num_sectors_x as usize * num_sectors_y as usize) + scaled_y * num_sectors_x as usize + scaled_x;
+        let sector_idx = scaled_z * (num_sectors_x  * num_sectors_y ) + scaled_y * num_sectors_x  + scaled_x;
 
-        self.sectors[sector_idx as usize].clone()
+        self.sectors[sector_idx].clone()
     }
 
     // pub fn set_xyz ( &mut self, x: usize, y: usize, z: usize, new_state: u8 ) {
