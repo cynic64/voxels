@@ -171,7 +171,7 @@ fn main() {
         };
         let dependency = SubpassDependency {
             passes: SubpassRef::External..SubpassRef::Pass(0),
-            stages: PipelineStage::COLOR_ATTACHMENT_OUTPUT..PipelineStage::COLOR_ATTACHMENT_OUTPUT,
+            stages: PipelineStage::COLOR_ATTACHMENT_OUTPUT..PipelineStage::COLOR_ATTACHMENT_OUTPUT,   // these do nothing? :p
             accesses: Access::empty()
                 ..(Access::COLOR_ATTACHMENT_READ | Access::COLOR_ATTACHMENT_WRITE),
         };
@@ -656,7 +656,7 @@ fn main() {
         queue_group.queues[0].submit(submission, Some(&frame_fence));
 
         // We first wait for the rendering to complete...
-        device.wait_for_fence(&frame_fence, !0).expect("Couldn't wait for fence, what the fuck?");
+        device.wait_for_fence(&frame_fence, !0).expect("Couldn't wait for fence!");
 
         // ...and then present the image on screen!
         swapchain

@@ -23,6 +23,7 @@ pub use imports::gfx_hal::{
         DepthTest, Descriptor, DescriptorRangeDesc, DescriptorSetLayoutBinding, DescriptorSetWrite,
         DescriptorType, Element, EntryPoint, GraphicsPipelineDesc, GraphicsShaderSet,
         PipelineStage, Rasterizer, Rect, ShaderStageFlags, StencilTest, VertexBufferDesc, Viewport, PolygonMode, Face, FrontFace,
+        Multisampling
     },
     window::Extent2D,
     Backbuffer, DescriptorPool, Device, FrameSync, Graphics, Instance, MemoryType, PhysicalDevice,
